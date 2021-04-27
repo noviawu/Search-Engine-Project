@@ -1,0 +1,23 @@
+<!-- [Almost c]ompletely identical to hw2 / hw3 / hw4 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            background-color: lightskyblue;
+        }
+    </style>
+    <title>{{ info['title'] }}</title>
+</head>
+<body>
+
+<h1>{{ info['title'] }}</h1> <!-- This line and the three below are to display the contents of the document requested -->
+<h3>Written by {{ info['author'] }}</h3>
+<h4>Published on {{ info['date'] }}</h4> <!-- changed from `published_date` -->
+<p>{{ info['content'] }}</p> <!-- changed from `content_str` -->
+
+<p>Please be advised that you may use your browser's "back" button to navigate backwards.</p>
+
+</body>
+</html>

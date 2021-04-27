@@ -130,3 +130,10 @@ dmypy.json
 
 # PyCharm
 .idea/
+
+# ElasticSearch stuff
+elasticsearch-*
+fp_data
+
+# Stupid Apple file
+.DS_STORE
