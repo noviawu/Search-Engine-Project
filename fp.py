@@ -100,8 +100,10 @@ def get_documents(query, analyzer, ranker, results_back):
 def bm25_documents(query, analyzer, results_back):
     if analyzer == 'default':
         q = Match(content={'query': query})
-    else:
-        q = Match(custom_content={'query': query})
+    elif analyzer == 'n_gram':
+        q = Match(n_gram_custom_content={'query': query})
+    elif analyzer == 'whitespace':
+        q = Match(whitespace_custom_content={'query': query})
     return Search(using='default', index='wapo_docs_50k').query(q)[:results_back]
 
 

@@ -6,13 +6,20 @@ from elasticsearch_dsl import (  # type: ignore
     Date,
     token_filter,
     analyzer,
+    tokenizer
 )
 
 # DONE: build your own analyzer
-custom_analyzer = analyzer(
-    'custom',
-    tokenizer='standard',
-    filter=['asciifolding', 'lowercase', 'snowball'],
+n_gram = analyzer(
+    'n_gram',
+    tokenizer=tokenizer("ngram", min_gram=3, max_gram=5),
+    filter=["lowercase", "stop", 'asciifolding', 'snowball'],
+)
+
+whitespace = analyzer(
+    'whitespace',
+    tokenizer='whitespace',
+    filter=["lowercase", "stop", 'asciifolding', 'snowball'],
 )
 
 
@@ -31,8 +38,11 @@ class BaseDoc(Document):
     content = Text(
         analyzer="standard"
     )  # we can also set the standard analyzer explicitly
-    custom_content = Text(
-        analyzer=custom_analyzer
+    n_gram_custom_content = Text(
+        analyzer=n_gram
+    )  # DONE: uncomment this to index the same content again with your custom analyzer
+    whitespace_custom_content = Text(
+        analyzer=whitespace
     )  # DONE: uncomment this to index the same content again with your custom analyzer
     date = Date(
         format="yyyy/MM/dd"

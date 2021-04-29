@@ -11,7 +11,7 @@ from pathlib import Path
 from utils import parse_wapo_topics
 
 from elasticsearch_dsl.connections import connections
-from hw5 import bm25_documents, embedding_documents
+from fp import bm25_documents, embedding_documents
 from metrics import ndcg
 
 
@@ -48,15 +48,16 @@ def form_parser():
         help='number of hits to return'
     )
     parser.add_argument(
-        '-u',
+        '--analyzer',
         action='store_true',
-        help='include this argument if using the custom analyzer (otherwise default)'
+        help='include this argument if using custom analyzer'
     )
     return parser
 
 
 def main():
-    connections.create_connection(hosts=["localhost"], timeout=100, alias="default")
+    connections.create_connection(
+        hosts=["localhost"], timeout=100, alias="default")
 
     title = 0
     description = 1
@@ -69,7 +70,14 @@ def main():
 
     idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
     query = topics[args.topic_id][idx]
-    analyzer = 'custom' if args.u else 'default'
+
+    if args.analyzer == 'n_gram':
+        analyzer = 'n_gram'
+    elif args.analyzer == 'whitespace':
+        analyzer = 'whitespace'
+    else:
+        analyzer = 'default'
+
     top_k = int(args.top_k)
 
     bm_search = bm25_documents(query, analyzer, top_k)

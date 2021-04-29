@@ -19,5 +19,5 @@ types=('title' 'description' 'narration')
 
 for type in $types; do
   echo "$type"
-  python evaluate.py --index_name wapo_docs_50k --topic_id 816 --query_type $type --vector_name ft_vector --top_k 20
+  python3 evaluate.py --index_name wapo_docs_50k --topic_id 816 --query_type $type --vector_name ft_vector --top_k 20
 done
