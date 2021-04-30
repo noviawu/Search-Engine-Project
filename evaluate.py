@@ -49,8 +49,9 @@ def form_parser():
     )
     parser.add_argument(
         '--analyzer',
-        action='store_true',
-        help='include this argument if using custom analyzer'
+        required=True,
+        type=str,
+        help='one of [default, n_gram, whitespace]'
     )
     return parser
 
@@ -66,7 +67,7 @@ def main():
     parser = form_parser()
     args = parser.parse_args()
 
-    topics = parse_wapo_topics(f'{Path("pa5_data").joinpath("topics2018.xml")}')
+    topics = parse_wapo_topics(f'{Path("fp_data").joinpath("topics2018.xml")}')
 
     idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
     query = topics[args.topic_id][idx]

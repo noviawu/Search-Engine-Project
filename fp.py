@@ -125,6 +125,7 @@ def embedding_documents(query, bm_search, ranker, results_back):
 
 
 def form_result_list(docs):
+    # TODO: put the 2s at top, then 1s, then 0s.
     paged_docs = defaultdict(list)
     i = 1
     for doc in docs:
