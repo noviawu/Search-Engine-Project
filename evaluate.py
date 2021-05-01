@@ -31,29 +31,38 @@ def form_parser():
     )
     parser.add_argument(
         '--query_type',
+        choices=['title', 'description', 'narration'],
         required=True,
         type=str,
-        help='one of [title, description, narration]'
+        help='the query to use'
     )
     parser.add_argument(
         '--vector_name',
+        choices=['sbert_vector', 'ft_vector'],
         required=False,
         type=str,
-        help='one of [sbert_vector, ft_vector]'
+        help='which word embeddings vector to use'
     )
     parser.add_argument(
         '--top_k',
         required=True,
-        type=int,
-        help='number of hits to return'
+        type=unsigned_int,
+        help='number of hits to return (greater than or equal to zero)'
     )
     parser.add_argument(
         '--analyzer',
+        choices=['default', 'n_gram', 'whitespace'],
         required=True,
         type=str,
-        help='one of [default, n_gram, whitespace]'
+        help='the analyzer to use'
     )
     return parser
+
+
+def unsigned_int(x):
+    if not isinstance(0, int) or int(x) < 0:
+        raise argparse.ArgumentTypeError('Must be a number greater than or equal to zero.')
+    return int(x)
 
 
 def main():
