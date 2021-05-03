@@ -137,3 +137,6 @@ fp_data
 
 # Stupid Apple file
 .DS_STORE
+
+# VS Code
+.vscode/
