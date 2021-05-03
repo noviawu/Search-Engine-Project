@@ -174,7 +174,7 @@ def form_result_list(docs):
     paged_docs = defaultdict(list)
     i = 1
     # print([(hit.title, hit.annotation) for hit in sorted(docs, key=get_hit_key, reverse=True)])
-    docs = sorted(docs, key=get_hit_key, reverse=True)
+    # docs = sorted(docs, key=get_hit_key, reverse=True)  # maybe lose this
     for doc in docs:
         if len(paged_docs[i]) == RESULTS_PER_PAGE:
             i += 1
@@ -187,16 +187,16 @@ def form_result_list(docs):
     return {el['doc_id']: el for lst in paged_docs.values() for el in lst}, paged_docs
 
 
-def get_hit_key(hit):
-    """
-    helper function for `form_result_list` -- basically, get the relevance of the document
-    :param hit: hit to get relevance from
-    :return: how relevant the document is (0, 1, 2)
-    """
-    # if hit.annotation:
-    #     return int(hit.annotation.split('-')[1])
-    # return 0
-    return int(hit.annotation.split('-')[1]) if hit.annotation else 0
+# def get_hit_key(hit):
+#     """
+#     helper function for `form_result_list` -- basically, get the relevance of the document
+#     :param hit: hit to get relevance from
+#     :return: how relevant the document is (0, 1, 2)
+#     """
+#     # if hit.annotation:
+#     #     return int(hit.annotation.split('-')[1])
+#     # return 0
+#     return int(hit.annotation.split('-')[1]) if hit.annotation else 0
 
 
 if __name__ == "__main__":

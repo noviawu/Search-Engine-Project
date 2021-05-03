@@ -138,28 +138,28 @@ https://roytuts.com/autocomplete-input-suggestion-using-python-and-flask/ -->
 <!--    <input type="text" id="query" name="query" {% if query !='' %} value="{{ query }}" {% endif %} size=50>-->
 <!--    <br>-->
 <!--    <input type="radio" name="method" id="bm25-default" value="bm25-default"-->
-<!--           {% if method== 'bm25-default' %} checked {% endif %}>-->
+<!--           {# {% if method== 'bm25-default' %} checked {% endif %} #}>-->
 <!--    <label for="bm25-default">Use BM25 and the default analyzer</label>-->
 <!--    <br>-->
 <!--    <input type="radio" name="method" id="bm25-custom" value="bm25-custom"-->
-<!--           {% if method== 'bm25-custom' %} checked {% endif %}>-->
+<!--           {# {% if method== 'bm25-custom' %} checked {% endif %} #}>-->
 <!--    <label for="bm25-custom">Use BM25 and the custom analyzer</label>-->
 <!--    <br>-->
 <!--    <input type="radio" name="method" id="fasttext-default" value="fasttext-default"-->
-<!--           {% if method== 'fasttext-default' %} checked {% endif %}>-->
+<!--           {# {% if method== 'fasttext-default' %} checked {% endif %} #}>-->
 <!--    <label for="fasttext-default">Rerank using fastText embeddings and the default analyzer</label>-->
 <!--    <br>-->
 <!--    <input type="radio" name="method" id="sbert-default" value="sbert-default"-->
-<!--           {% if method== 'sbert-default' %} checked {% endif %}>-->
+<!--           {# {% if method== 'sbert-default' %} checked {% endif %} #}>-->
 <!--    <label for="sbert-default">Rerank using sentence BERT embeddings and the default analyzer</label>-->
 <!--    <br>-->
 <!--    <label for="num-results">&emsp; Return the top</label>-->
 <!--    <select name="num-results" id="num-results">-->
-<!--        <option value="5" {% if results_back== 5 %} selected="selected" {% endif %}>5</option>-->
-<!--        <option value="10" {% if results_back== 10 %} selected="selected" {% endif %}>10</option>-->
-<!--        <option value="20" {% if results_back== 20 %} selected="selected" {% endif %}>20</option>-->
-<!--        <option value="50" {% if results_back== 50 %} selected="selected" {% endif %}>50</option>-->
-<!--        <option value="100" {% if results_back== 100 %} selected="selected" {% endif %}>100</option>-->
+<!--        <option value="5" {# {% if results_back== 5 %} selected="selected" {% endif %} #}>5</option>-->
+<!--        <option value="10" {# {% if results_back== 10 %} selected="selected" {% endif %} #}>10</option>-->
+<!--        <option value="20" {# {% if results_back== 20 %} selected="selected" {% endif %} #}>20</option>-->
+<!--        <option value="50" {# {% if results_back== 50 %} selected="selected" {% endif %} #}>50</option>-->
+<!--        <option value="100" {# {% if results_back== 100 %} selected="selected" {% endif %} #}>100</option>-->
 <!--    </select>-->
 <!--    results-->
 <!--    <br>-->
