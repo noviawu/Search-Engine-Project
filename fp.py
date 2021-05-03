@@ -1,11 +1,11 @@
 from collections import defaultdict
-from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
-from elasticsearch_dsl.query import Ids, Match
+from elasticsearch_dsl.query import Ids, Match, MatchAll
 from embedding_service.client import EmbeddingClient
 from example_query import generate_script_score_query
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
+import json, os
 
 app = Flask(__name__)
 
@@ -87,7 +87,34 @@ def doc_data(doc_id):
     return render_template("doc.html", info=all_docs[doc_id])
 
 
+# search "page" (autocompletion)
+@app.route('/search', methods=['POST'])
+def search():
+    """
+    search "page" to give the auto-completion when typing in suggestions
+    :return: jsonified list of possible autocompletion matches
+    """
+    term = request.form['q']
+    print(term)
+    connections.create_connection(hosts=['localhost'], timeout=100, alias='default')
+    q = Match(title={'query': term})
+    s = Search(using='default', index='wapo_docs_50k').query(q)
+    suggest = s.suggest('autocomplete_suggestion', term, term={'field': 'content'})
+    response = suggest.execute()
+    resp = jsonify([hit.title for hit in response])
+    resp.status_code = 200
+    return resp
+
+
 def get_documents(query, analyzer, ranker, results_back):
+    """
+    get the documents that match the query, using the specified analyzer and reranker (if applicable)
+    :param query: query to match on
+    :param analyzer: analyzer to use
+    :param ranker: reranker to use
+    :param results_back: how many results to return
+    :return: list of documents that match parameters
+    """
     connections.create_connection(hosts=["localhost"], timeout=100, alias="default")
     search = bm25_documents(query, analyzer, results_back)  # out here because need it for both
     if ranker == 'bm25':  # do no more work, just process the data
@@ -98,14 +125,31 @@ def get_documents(query, analyzer, ranker, results_back):
 
 
 def bm25_documents(query, analyzer, results_back):
+    """
+    use the BM25 algorithm to find documents that match the query
+    :param query: query to match on
+    :param analyzer: analyzer to use
+    :param results_back: how many results to return
+    :return: `Search` object to match documents
+    """
     if analyzer == 'default':
         q = Match(content={'query': query})
-    else:
-        q = Match(custom_content={'query': query})
+    elif analyzer == 'n_gram':
+        q = Match(n_gram_custom_content={'query': query})
+    elif analyzer == 'whitespace':
+        q = Match(whitespace_custom_content={'query': query})
     return Search(using='default', index='wapo_docs_50k').query(q)[:results_back]
 
 
 def embedding_documents(query, bm_search, ranker, results_back):
+    """
+    use the selected reranker to rerank documents found by BM25
+    :param query: query to match on
+    :param bm_search: results of the BM25 algorithm
+    :param ranker: reranker to use
+    :param results_back: number of results to return
+    :return: `Search` object to match on reranked documents
+    """
     ids = [hit.meta.id for hit in bm_search.execute()]
     q_match_ids = Ids(values=ids)
 
@@ -118,21 +162,41 @@ def embedding_documents(query, bm_search, ranker, results_back):
     compound = (q_match_ids & q_vector)
 
     return Search(using='default', index='wapo_docs_50k').query(compound)[:results_back]
-    # docs = s.execute()
-    # return form_result_list(docs)
 
 
 def form_result_list(docs):
+    """
+    put all documents matched in a dictionary to easily render documents per page for the user
+    :param docs: documents that were matched / to display
+    :return: tuple: dictionary of doc id to relevant document, defaultdict of docs by page they appear on,
+                    and sorted by relevance (most relevant appear first)
+    """
     paged_docs = defaultdict(list)
     i = 1
+    # print([(hit.title, hit.annotation) for hit in sorted(docs, key=get_hit_key, reverse=True)])
+    # docs = sorted(docs, key=get_hit_key, reverse=True)  # maybe lose this
     for doc in docs:
         if len(paged_docs[i]) == RESULTS_PER_PAGE:
             i += 1
         paged_docs[i].append(
             {'doc_id': doc.doc_id, 'title': doc.title,
-             'author': doc.author, 'date': doc.date, 'content': doc.content}
+             'author': doc.author, 'date': doc.date, 'content': doc.content,
+             'annotation': doc.annotation}
         )
+
     return {el['doc_id']: el for lst in paged_docs.values() for el in lst}, paged_docs
+
+
+# def get_hit_key(hit):
+#     """
+#     helper function for `form_result_list` -- basically, get the relevance of the document
+#     :param hit: hit to get relevance from
+#     :return: how relevant the document is (0, 1, 2)
+#     """
+#     # if hit.annotation:
+#     #     return int(hit.annotation.split('-')[1])
+#     # return 0
+#     return int(hit.annotation.split('-')[1]) if hit.annotation else 0
 
 
 if __name__ == "__main__":

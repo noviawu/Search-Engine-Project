@@ -6,8 +6,53 @@
         body {
             background-color: lightskyblue;
         }
+
+        table, th, td {
+            border: 0.125em solid black;
+            border-collapse: collapse;
+            padding: 0.25em;
+        }
+
+        table {
+            border: 0.25em solid black;
+            margin-top: 0.25em;
+            margin-bottom: 1em;
+            width: 100%;
+        }
     </style>
     <title>Washington Post Search</title>
+
+    <!-- the following code heavily taken from the following URL-->
+    <!-- https://roytuts.com/autocomplete-input-suggestion-using-python-and-flask/
+https://roytuts.com/autocomplete-input-suggestion-using-python-and-flask/ -->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" crossorigin="anonymous"></script>
+    <script>
+        $(function () {
+            $('#query').autocomplete({
+                source: function (request, response) {
+                    console.log(request.term)
+                    $.ajax({
+                        type: 'POST',
+                        url: 'http://localhost:5000/search',
+                        dataType: 'json',
+                        cache: false,
+                        data: {
+                            q: request.term
+                        },
+                        success: function (data) {
+                            response(data);
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            console.log(textStatus + ": " + errorThrown);
+                        }
+                    });
+                },
+                minLength: 2
+            });
+        });
+    </script>
 </head>
 <body>
 
@@ -17,19 +62,56 @@
     <label for="query">Query:</label>
     <input type="text" id="query" name="query" size=50>
     <br>
-    <input type="radio" name="method" id="bm25-default" value="bm25-default" checked>
-    <label for="bm25-default">Use BM25 and the default analyzer</label>
     <br>
-    <input type="radio" name="method" id="bm25-custom" value="bm25-custom">
-    <label for="bm25-custom">Use BM25 and the custom analyzer</label>
-    <br>
-    <input type="radio" name="method" id="fasttext-default" value="fasttext-default">
-    <label for="fasttext-default">Rerank using fastText embeddings and the default analyzer</label>
-    <br>
-    <input type="radio" name="method" id="sbert-default" value="sbert-default">
-    <label for="sbert-default">Rerank using sentence BERT embeddings and the default analyzer</label>
-    <br>
-    <label for="num-results">&emsp; Return the top</label>
+    <label for="algorithm-analyzer">
+        Select one of the following nine options for document matching and retrieval.
+    </label>
+    <table id="algorithm-analyzer">
+        <tr>
+            <td>
+                <input type="radio" name="method" id="bm25-default" value="bm25-default" checked>
+                <label for="bm25-default">Use BM25 and the default analyzer</label>
+            </td>
+            <td>
+                <input type="radio" name="method" id="fasttext-default" value="fasttext-default">
+                <label for="fasttext-default">Rerank using fastText embeddings and the default analyzer</label>
+            </td>
+            <td>
+                <input type="radio" name="method" id="sbert-default" value="sbert-default">
+                <label for="sbert-default">Rerank using sentence BERT embeddings and the default analyzer</label>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <input type="radio" name="method" id="bm25-n_gram" value="bm25-n_gram">
+                <label for="bm25-n_gram">Use BM25 and the custom N-Gram analyzer</label>
+            </td>
+            <td>
+                <input type="radio" name="method" id="fasttext-n_gram" value="fasttext-n_gram">
+                <label for="fasttext-n_gram">Rerank using fastText embeddings and the N-Gram analyzer</label>
+            </td>
+            <td>
+                <input type="radio" name="method" id="sbert-n_gram" value="sbert-n_gram">
+                <label for="sbert-n_gram">Rerank using sentence BERT embeddings and the N-Gram analyzer</label>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <input type="radio" name="method" id="bm25-whitespace" value="bm25-whitespace">
+                <label for="bm25-whitespace">Use BM25 and the custom whitespace analyzer</label>
+            </td>
+            <td>
+                <input type="radio" name="method" id="fasttext-whitespace" value="fasttext-whitespace">
+                <label for="fasttext-whitespace">Rerank using fastText embeddings and the whitespace analyzer</label>
+            </td>
+            <td>
+                <input type="radio" name="method" id="sbert-whitespace" value="sbert-whitespace">
+                <label for="sbert-whitespace">Rerank using sentence BERT embeddings and the whitespace analyzer</label>
+            </td>
+        </tr>
+    </table>
+
+    <label for="num-results">Return the top</label>
     <select name="num-results" id="num-results">
         <option value="5" selected="selected">5</option>
         <option value="10">10</option>

@@ -11,7 +11,7 @@ from pathlib import Path
 from utils import parse_wapo_topics
 
 from elasticsearch_dsl.connections import connections
-from hw5 import bm25_documents, embedding_documents
+from fp import bm25_documents, embedding_documents
 from metrics import ndcg
 
 
@@ -31,32 +31,43 @@ def form_parser():
     )
     parser.add_argument(
         '--query_type',
+        choices=['title', 'description', 'narration'],
         required=True,
         type=str,
-        help='one of [title, description, narration]'
+        help='the query to use'
     )
     parser.add_argument(
         '--vector_name',
+        choices=['sbert_vector', 'ft_vector'],
         required=False,
         type=str,
-        help='one of [sbert_vector, ft_vector]'
+        help='which word embeddings vector to use'
     )
     parser.add_argument(
         '--top_k',
         required=True,
-        type=int,
-        help='number of hits to return'
+        type=unsigned_int,
+        help='number of hits to return (greater than or equal to zero)'
     )
     parser.add_argument(
-        '-u',
-        action='store_true',
-        help='include this argument if using the custom analyzer (otherwise default)'
+        '--analyzer',
+        choices=['default', 'n_gram', 'whitespace'],
+        required=True,
+        type=str,
+        help='the analyzer to use'
     )
     return parser
 
 
+def unsigned_int(x):
+    if not isinstance(0, int) or int(x) < 0:
+        raise argparse.ArgumentTypeError('Must be a number greater than or equal to zero.')
+    return int(x)
+
+
 def main():
-    connections.create_connection(hosts=["localhost"], timeout=100, alias="default")
+    connections.create_connection(
+        hosts=["localhost"], timeout=100, alias="default")
 
     title = 0
     description = 1
@@ -65,11 +76,18 @@ def main():
     parser = form_parser()
     args = parser.parse_args()
 
-    topics = parse_wapo_topics(f'{Path("pa5_data").joinpath("topics2018.xml")}')
+    topics = parse_wapo_topics(f'{Path("fp_data").joinpath("topics2018.xml")}')
 
     idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
     query = topics[args.topic_id][idx]
-    analyzer = 'custom' if args.u else 'default'
+
+    if args.analyzer == 'n_gram':
+        analyzer = 'n_gram'
+    elif args.analyzer == 'whitespace':
+        analyzer = 'whitespace'
+    else:
+        analyzer = 'default'
+
     top_k = int(args.top_k)
 
     bm_search = bm25_documents(query, analyzer, top_k)
