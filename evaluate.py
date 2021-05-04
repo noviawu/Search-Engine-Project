@@ -65,6 +65,20 @@ def unsigned_int(x):
     return int(x)
 
 
+def print_result_rprecision(response, top_k):
+    true_pos = 0
+    total_relevant = 135
+    for hit in response:
+        if hit.annotation:
+            if hit.annotation[-1] == '2' or hit.annotation[-1] == '1':
+                true_pos += 1
+    print("true pos", true_pos)
+    p = true_pos / top_k
+    r = true_pos / total_relevant
+    print("r-precision is ", r)
+    print("f score is", (2 * p * r) / (p + r))
+
+
 def main():
     connections.create_connection(
         hosts=["localhost"], timeout=100, alias="default")
@@ -109,7 +123,8 @@ def main():
     relevance = [get_relevance(hit.annotation) for hit in results]
     for hit in [hit for hit in results if hit.annotation.split('-')[0] == args.topic_id]:
         print(hit.annotation, hit.title, sep='\t')
-    print(ndcg(relevance, top_k))
+    print("NDCG: ", ndcg(relevance, top_k))
+    print_result_rprecision(results, top_k)
 
 
 if __name__ == '__main__':
