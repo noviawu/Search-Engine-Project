@@ -1,4 +1,6 @@
 from collections import defaultdict
+from typing import List
+
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.query import Ids, Match, MatchAll
@@ -6,6 +8,17 @@ from embedding_service.client import EmbeddingClient
 from example_query import generate_script_score_query
 from flask import Flask, render_template, request, jsonify
 import json, os
+import nltk
+import ssl
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+from nltk.corpus import wordnet
+from embedding_service.text_processing import TextProcessing
+
 
 app = Flask(__name__)
 
@@ -17,6 +30,9 @@ all_docs = []
 documents = []
 num_results = 0
 results_back = 0
+
+# text processor for query using customized processor
+text_processor = TextProcessing.from_nltk()
 
 
 # home page
@@ -39,7 +55,11 @@ def results():
     global num_results
     global results_back
 
-    query = request.form['query']
+    query_input = request.form['query']
+    # query processing
+    query_list: List[str] = query_input.split(" ")
+    query_n = normalize_query(query_list)
+    query = get_synonyms(query_n)
     method = request.form['method']
     ranker = method.split('-')[0]
     analyzer = method.split('-')[1]
@@ -117,7 +137,7 @@ def get_documents(query, analyzer, ranker, results_back):
     """
     connections.create_connection(hosts=["localhost"], timeout=100, alias="default")
     search = bm25_documents(query, analyzer, results_back)  # out here because need it for both
-    if ranker == 'bm25':  # do no more work, just process the data
+    if ranker == 'bm25':  # do no more work, just process the fp_data
         return form_result_list(search.execute())
     else:  # rerank
         new_search = embedding_documents(query, search, ranker, results_back)
@@ -185,6 +205,32 @@ def form_result_list(docs):
         )
 
     return {el['doc_id']: el for lst in paged_docs.values() for el in lst}, paged_docs
+
+
+def get_synonyms(query_list: List[str]) -> str:
+    """
+    get a list of synonyms for the user input query and return
+    """
+    synonyms = set()
+    synonyms.add(query)
+    for q in query_list:
+        syn = wordnet.synsets(q)
+        for s in syn:
+            for lm in s.lemmas():
+                synonyms.append(lm.name())  # adding into synonyms
+    list_of_strings = [str(s) for s in synonyms]
+    joined_string = " ".join(list_of_strings)
+    return joined_string
+
+
+def normalize_query(query_list: List[str]) -> str:
+    """
+    return a normalized query with the customized text processor
+    """
+    normalized_q = []
+    for q in query_list:
+        normalized_q.append(text_processor.normalize(q))
+    return "".join(normalized_q)
 
 
 # def get_hit_key(hit):

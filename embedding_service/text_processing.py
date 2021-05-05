@@ -4,6 +4,7 @@ it's used to get valid tokens from the text before generating fasttext embedding
 """
 import re
 from typing import Any, List
+import unidecode
 
 from nltk.tokenize import word_tokenize  # type: ignore
 from nltk.stem.porter import PorterStemmer  # type: ignore
@@ -12,6 +13,7 @@ from nltk.corpus import stopwords  # type: ignore
 
 class TextProcessing:
     def __init__(self, stemmer, stop_words, *args):
+        self.unicode = unidecode
         self.stemmer = stemmer
         self.STOP_WORDS = stop_words
 
@@ -30,14 +32,13 @@ class TextProcessing:
         return len(token) > 1 and (not self.is_stop_words(token))
 
     def normalize(self, token: str, use_stemmer: bool) -> str:
-        normalized = re.sub(r"[^a-zA-Z0-9\-]", "", token.lower())
-        if self.is_valid(normalized):
-            if use_stemmer:
-                return self.stemmer(normalized)
-            else:
-                return normalized
-        else:
+        token_lower = token.lower()
+        cleaned = re.sub(r'[^a-z0-9]', '', token_lower)
+        if len(cleaned) == 1 or cleaned in self.STOP_WORDS:
             return ""
+        else:
+            # return the root word of a string that has no accent
+            return self.stemmer(self.unicode.unidecode(cleaned))
 
     def get_valid_tokens(
         self, title: str, content: str, *, use_stemmer: bool = True
