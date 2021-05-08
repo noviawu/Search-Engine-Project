@@ -92,8 +92,12 @@ def main():
 
     topics = parse_wapo_topics(f'{Path("fp_data").joinpath("topics2018.xml")}')
 
-    idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
-    query = topics[args.topic_id][idx]
+    '''idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
+    query = topics[args.topic_id][idx]'''
+    query_list = ["Federal Minimum Wage Increase",
+                  "actions and reactions of President or Congress to increase U.S. federal minimum wage",
+                  "advocacy or actions (or lack thereof) by the President or Congress to increase the U.S. federal minimum wage,government contract workers. Not Analyses and discussions of pros and cons"]
+    query = query_list[0] if args.query_type == 'title' else query_list[1] if args.query_type == 'description' else query_list[2]
 
     if args.analyzer == 'n_gram':
         analyzer = 'n_gram'
