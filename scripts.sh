@@ -14,10 +14,10 @@
 #python evaluate.py --index_name wapo_docs_50k --topic_id 321 --query_type narration --vector_name sbert_vector --top_k 20
 #
 
-topics=('341' '347' '350')
-types=('title' 'description' 'narration')
-
-for type in $types; do
-  echo "$type"
-  python3 evaluate.py --index_name wapo_docs_50k --topic_id 816 --query_type $type --vector_name ft_vector --top_k 20
-done
+#topics=('341' '347' '350')
+#types=('title' 'description' 'narration')
+#
+#for type in $types; do
+#  echo "$type"
+#  python3 evaluate.py --index_name wapo_docs_50k --topic_id 816 --query_type $type --vector_name ft_vector --top_k 20
+#done

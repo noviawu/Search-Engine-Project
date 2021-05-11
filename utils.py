@@ -5,6 +5,26 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 
 
+def first_unique_n(iterable, n, min_length=1):
+    """
+    get first `n` unique elements (greater than length l) from an iterable
+    :author: Curtis Wilcox
+    :param iterable: thing to get unique elements from
+    :param n: how many unique elements to grab
+    :param min_length: minimum length of element
+    :return: "generator" of first `n` unique elements with length greater than l
+             (less if iterable has fewer than `n` unique elements)
+    """
+    seen = set()
+    for element in iterable:
+        if element in seen or len(element) < min_length:
+            continue
+        seen.add(element)
+        yield element
+        if len(seen) == n:
+            return
+
+
 def load_clean_wapo_with_embedding(
     wapo_jl_path: Union[str, os.PathLike]
 ) -> Generator[Dict, None, None]:

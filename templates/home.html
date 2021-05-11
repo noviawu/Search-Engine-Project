@@ -53,6 +53,7 @@ https://roytuts.com/autocomplete-input-suggestion-using-python-and-flask/ -->
             });
         });
     </script>
+    <!-- end of the "following code" section -->
 </head>
 <body>
 
@@ -112,13 +113,8 @@ https://roytuts.com/autocomplete-input-suggestion-using-python-and-flask/ -->
     </table>
 
     <label for="num-results">Return the top</label>
-    <select name="num-results" id="num-results">
-        <option value="5" selected="selected">5</option>
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="50">50</option>
-        <option value="100">100</option>
-    </select>
+    <input type="number" step="1" min="1" id="num-results" name="num-results"
+            {% if results_back !='' %} value="{{ results_back }}" {% endif %}>
     results
     <br>
     <input type="submit" value="Search">

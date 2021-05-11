@@ -1,11 +1,3 @@
-"""
-# SAMPLE QUERIES!
-# use title from topic 321 as the query; search over the custom_content field from index "wapo_docs_50k" based on BM25 and compute NDCG@20
-python evaluate.py --index_name wapo_docs_50k --topic_id 321 --query_type title -u --top_k 20
-
-# use narration from topic 321 as the query; search over the content field from index "wapo_docs_50k" based on sentence BERT embedding and compute NDCG@20
-python evaluate.py --index_name wapo_docs_50k --topic_id 321 --query_type narration --vector_name sbert_vector --top_k 20
-"""
 import argparse
 from pathlib import Path
 from utils import parse_wapo_topics
@@ -60,15 +52,23 @@ def form_parser():
 
 
 def unsigned_int(x):
-    if not isinstance(0, int) or int(x) < 0:
+    """
+    create new "type" for Python / the argparser used for this CLI -- `unsigned int`
+    :author: Curtis Wilcox
+    :param x: value to convert to `unsigned int`, if is an `int` >= 0
+    :return: integer version of `x`, iff `x` is an `int` >= 0
+    :raise: argparse.ArgumentTypeError if `x` is not an `int` or `x` is an `int` < 0
+    """
+    if not isinstance(x, int) or int(x) < 0:
         raise argparse.ArgumentTypeError('Must be a number greater than or equal to zero.')
     return int(x)
 
 
 def main():
-    connections.create_connection(
-        hosts=["localhost"], timeout=100, alias="default")
+    # create default ES connection
+    connections.create_connection(hosts=["localhost"], timeout=100, alias="default")
 
+    # these are the indices of each "column" once the XML file is parsed
     title = 0
     description = 1
     narration = 2
@@ -81,6 +81,7 @@ def main():
     idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
     query = topics[args.topic_id][idx]
 
+    # set analyzer
     if args.analyzer == 'n_gram':
         analyzer = 'n_gram'
     elif args.analyzer == 'whitespace':
@@ -88,10 +89,10 @@ def main():
     else:
         analyzer = 'default'
 
+    # assured to be an int because types are enforced in the argparser
     top_k = int(args.top_k)
 
     bm_search = bm25_documents(query, analyzer, top_k)
-
     if args.vector_name:
         ranker = 'sbert' if args.vector_name == 'sbert_vector' else 'fasttext'
         new_search = embedding_documents(query, bm_search, ranker, top_k)
@@ -100,6 +101,11 @@ def main():
         results = bm_search.execute()
 
     def get_relevance(annotation):
+        """
+        inner function to grab just the number of relevance from the annotation
+        :param annotation: annotation from document (in the form of `topic_id-relevance` [int-int])
+        :return: relevance if relevant to current topic, otherwise 0
+        """
         if not annotation or annotation.split('-')[0] != args.topic_id:
             return 0
         return int(annotation.split('-')[1])

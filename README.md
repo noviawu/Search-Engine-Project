@@ -45,6 +45,14 @@ PUT COMMENTS AND STUFF HERE (ONCE THEY'VE BEEN ALL WRITTEN BELOW)
 
 # CURTIS
 
+- `utils.py` -- `first_unique_n`
+
+- `fp.py` -- `search`
+  
+- `index.py` -- `_populate_doc`
+
+- add `Completion` to `doc_template.py`
+
 This is a sample table:
 
 Paragraph > Table > Insert table (command-option-T)
