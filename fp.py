@@ -96,10 +96,12 @@ def search():
     """
     search_term = request.form['q']
     connections.create_connection(hosts=['localhost'], timeout=100, alias='default')
+
+    # create a search object over the document type being used
     s = BaseDoc.search()
     s = s.suggest('title_suggestions', search_term, completion={'field': 'title_suggest'})
     response = s.execute()
-    print(response.suggest.title_suggestions)
+    # print(response.suggest.title_suggestions)
     suggestions = [option.text
                    for result in response.suggest.title_suggestions
                    for option in result.options]
