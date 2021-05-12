@@ -12,7 +12,7 @@ from utils import parse_wapo_topics
 
 from elasticsearch_dsl.connections import connections
 from fp import bm25_documents, embedding_documents
-from metrics import ndcg
+from metrics import ndcg, average_precision
 
 
 def form_parser():
@@ -65,20 +65,6 @@ def unsigned_int(x):
     return int(x)
 
 
-def print_result_rprecision(response, top_k):
-    true_pos = 0
-    total_relevant = 135
-    for hit in response:
-        if hit.annotation:
-            if hit.annotation[-1] == '2' or hit.annotation[-1] == '1':
-                true_pos += 1
-    print("true pos", true_pos)
-    p = true_pos / top_k
-    r = true_pos / total_relevant
-    print("r-precision is ", r)
-    print("f score is", (2 * p * r) / (p + r))
-
-
 def main():
     connections.create_connection(
         hosts=["localhost"], timeout=100, alias="default")
@@ -92,12 +78,8 @@ def main():
 
     topics = parse_wapo_topics(f'{Path("fp_data").joinpath("topics2018.xml")}')
 
-    '''idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
-    query = topics[args.topic_id][idx]'''
-    query_list = ["Federal Minimum Wage Increase",
-                  "actions and reactions of President or Congress to increase U.S. federal minimum wage",
-                  "advocacy or actions (or lack thereof) by the President or Congress to increase the U.S. federal minimum wage,government contract workers. Not Analyses and discussions of pros and cons"]
-    query = query_list[0] if args.query_type == 'title' else query_list[1] if args.query_type == 'description' else query_list[2]
+    idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
+    query = topics[args.topic_id][idx]
 
     if args.analyzer == 'n_gram':
         analyzer = 'n_gram'
@@ -128,7 +110,7 @@ def main():
     for hit in [hit for hit in results if hit.annotation.split('-')[0] == args.topic_id]:
         print(hit.annotation, hit.title, sep='\t')
     print("NDCG: ", ndcg(relevance, top_k))
-    print_result_rprecision(results, top_k)
+    print("ave precision: ", average_precision(relevance))
 
 
 if __name__ == '__main__':

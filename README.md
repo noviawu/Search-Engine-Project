@@ -55,7 +55,7 @@ Paragraph > Table > Insert table (command-option-T)
 |      |      |      |      |
 |      |      |      |      |
 |      |      |      |      |
-
+|      |      |      |      |
 
 
 
