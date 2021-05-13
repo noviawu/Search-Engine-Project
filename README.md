@@ -36,7 +36,11 @@ Our team did multiple things to optimize the user's retrieval of documents that 
 
 We created two new custom analyzers -- one that used the `trigram` tokenizer and one that used the `whitespace` tokenizer (both analyzers have filters based on lowercase letters, stopwords, asciifolding, and use the porter stemmer).
 
-We implemented a synonym mechanism.
+We implemented a synonym mechanism to invoke either query expansion (if the query has fewer than four words) or query summarization (if the query has greater than seven words).
+
+We removed boilerplate text from queries and utilized the set difference between the results of documents from a relevant query and the results from an irrelevant query (for example, anything about talking heads) to remove irrelevant documents from the overall result set.
+
+We attempted to use the `TF-IDF` scoring mechanism to reduce the number of irrelevant tokens in the embeddings in hopes of improving the retrieval performance (especially for `fastText`). Unfortunately, this proved too complicated for us.
 
 The Flask web app will automatically suggest queries for the user based on what they have typed in at any given moment. The suggestions are based off of the titles of the documents.
 
@@ -63,8 +67,20 @@ There is also a provided CLI. The user can enter queries to obtain the `Normaliz
 
 - `Python 3` (specifically,  `Python 3.8`)
   - Installed when creating the virtual environment (venv). Using `miniconda`, the command was `conda create -n cosi132a python=3.8`
-- `elasticsearch, elasticsearch-dsl, sentence-transformers, flask, numpy, zmq`
+  
+- `elasticsearch, elasticsearch-dsl, sentence-transformers, flask, numpy, zmq, unidecode`
+  
   - Installed using `pip` in the activated venv (`pip install -r requirements.txt`, where `requirements.txt` contains each of the previously mentioned requirements, separated by a newline, and nothing else)
+  
+- `spaCy`
+
+  - On the command line, run the following commands (within the environment):
+
+  - ```shell
+    pip install -U pip setuptools wheel
+    pip install -U spacy
+    python -m spacy download en_core_web_sm
+    ```
 
 #### Build Instructions
 
@@ -142,10 +158,53 @@ The system that we created for this final project runs primarily off of two file
 
 `doc.html` displays specific information for a selected document (the title, the author, the date the document was published, and the content). The only way to navigate back is by using the browser's back button.
 
+---
+
+#### Results
+
+##### Baseline Results
+
+| NDCG           | Title | Description | Narration |
+| -------------- | ----- | ----------- | --------- |
+| BM25 + def     | 0.767 | 0.836       | 0.708     |
+| sBERT + def    | 0.783 | 0.832       | 0.858     |
+| fastText + def | 0.579 | 0.628       | 0.676     |
+
+| Ave Precision  | Title | Description | Narration |
+| -------------- | ----- | ----------- | --------- |
+| BM25 + def     | 0.476 | 0.803       | 0.570     |
+| sBERT + def    | 0.709 | 0.717       | 0.832     |
+| fastText + def | 0.331 | 0.502       | 0.457     |
+
+##### After Results
+
+| NDCG                  | Title | Description | Narration |
+| --------------------- | ----- | ----------- | --------- |
+| BM25 + def            | 0.836 | 0.879       | 0.757     |
+| BM25 + n_gram         | 0.385 | 0.731       | 0.634     |
+| BM25 + whitespace     | 0.596 | 0.768       | 0.680     |
+| sBERT + def           | 0.857 | 0.896       | 0.822     |
+| sBERT + n_gram        | 0.860 | 0.843       | 0.700     |
+| sBERT + whitespace    | 0.842 | 0.839       | 0.716     |
+| fastText + def        | 0.606 | 0.783       | 0.817     |
+| fastText + n_gram     | 0.332 | 0.870       | 0.895     |
+| fastText + whitespace | 0.430 | 0.958       | 0.865     |
+
+
+| Ave Precision         | Title | Description | Narration |
+| --------------------- | ----- | ----------- | --------- |
+| BM25 + def            | 0.527 | 0.921       | 0.613     |
+| BM25 + n_gram         | 0.238 | 0.638       | 0.526     |
+| BM25 + whitespace     | 0.433 | 0.731       | 0.649     |
+| sBERT + def           | 0.787 | 0.944       | 0.715     |
+| sBERT + n_gram        | 0.978 | 0.864       | 0.656     |
+| sBERT + whitespace    | 0.877 | 0.832       | 0.742     |
+| fastText + def        | 0.344 | 0.724       | 0.698     |
+| fastText + n_gram     | 0.153 | 0.640       | 0.685     |
+| fastText + whitespace | 0.266 | 0.840       | 0.724     |
+
 
 ***
-
-PUT COMMENTS AND STUFF HERE (ONCE THEY'VE BEEN ALL WRITTEN BELOW)
 
 #### Breakdown by Teammate
 
@@ -161,117 +220,35 @@ The Flask-side display of success comes in the form of the `search` function in 
 
 Ideally, the suggestions would not be based solely on the first six unique two-or-more-character words in the title of the document, and have more to do with parts of the content of the document being suggested. However, since generating permutations is expensive, and it took so long to paw through layers of difficult documentation, StackOverflow questions, and GitHub Issues, and get all of the parts to work together, this is the method that was selected.
 
+I spent about fifteen hours into this assignment. 
+
 ##### Novia
 
-
-
-##### Rachel
-
-
-
-
-***
-
-
-#### Time Spent
-
-
-#### Difficulty
-
-
-#### General Comments
-
-# CURTIS
-
-- `utils.py` -- `first_unique_n`
-
-- `fp.py` -- `search`
-  
-- `index.py` -- `_populate_doc`
-
-- add `Completion` to `doc_template.py`
-
-This is a sample table:
-
-Paragraph > Table > Insert table (command-option-T)
-
-|      |      |      |      |
-| ---- | ---- | ---- | ---- |
-|      |      |      |      |
-|      |      |      |      |
-|      |      |      |      |
-|      |      |      |      |
-|      |      |      |      |
-
-
-
-
-# NOVIA
-
 - Tasks: 
-    - Removal of boilerplate texts in queries 
-    - Perform set difference of relevant query search and irrelevant query search to eliminate irrelevant documents
-    - Ran most of the scores, before improvement and after each feature improvement
-    - Computing tf-idf scores for each token to try to filter out less important words, so only important words are embedded
-- Baseline scores:
+  - Removal of boilerplate texts in queries 
+  - Perform set difference of relevant query search and irrelevant query search to eliminate irrelevant documents
+  - Ran most of the scores, before improvement and after each feature improvement
+  - Computing `TF-IDF` scores for each token to try to filter out less important words, so only important words are embedded
 
-|    NDCG  |   Title   |   Description   |   Narration   |
-| ---- | ---- | ---- | ---- |
-|   BM25 + def   |   0.767   |   0.836   |   0.708   |
-|   sBERT + def   |   0.783   |   0.832   |   0.858   |
-|   fastText + def   |   0.579   |   0.628   |  0.676    |
-
-
-
-|    Ave Precision  |   Title   |   Description   |   Narration   |
-| ---- | ---- | ---- | ---- |
-|   BM25 + def   |   0.476   |   0.803   |   0.570   |
-|   sBERT + def   |   0.709   |   0.717   |   0.832   |
-|   fastText + def   |   0.331   |   0.502   |  0.457    |
-
-- Final score after custom analyzer and custom query:
-
-|    NDCG  |   Title   |   Description   |   Narration   |
-| ---- | ---- | ---- | ---- |
-|   BM25 + def   |   0.836   |   0.879   |  0.757    |
-|   BM25 + n_gram   |   0.385   |   0.731   |   0.634   |
-|   BM25 + whitespace   |   0.596   |   0.768   |   0.680   |
-|   sBERT + def   |   0.857   |   0.896   |   0.822   |
-|   sBERT + n_gram   |   0.860   |    0.843  |   0.700   |
-|   sBERT + whitespace   |   0.842   |  0.839    |   0.716   |
-|   fastText + def   |   0.606   |  0.783    |   0.817   |
-|   fastText + n_gram   |   0.332   |   0.870   |   0.895   |
-|   fastText + whitespace   |   0.430   |   0.958   |   0.865   |
-
-
-|    Ave Precision  |   Title   |   Description   |   Narration   |
-| ---- | ---- | ---- | ---- |
- BM25 + def   |   0.527   |    0.921  |   0.613   |
-|   BM25 + n_gram   |   0.238   |  0.638    |   0.526   |
-|   BM25 + whitespace   |   0.433   |   0.731   |  0.649    |
-|   sBERT + def   |  0.787    |   0.944  |   0.715   |
-|   sBERT + n_gram   |  0.978    |  0.864    |   0.656   |
-|   sBERT + whitespace   |   0.877   |   0.832   |   0.742   |
-|   fastText + def   |   0.344   |   0.724   |  0.698    |
-|   fastText + n_gram   |   0.153   |    0.640  |   0.685   |
-|   fastText + whitespace   |  0.266    |   0.840   |   0.724   |
 
 - Time spent: around 10 hours researching, asking questions, implementing, scoring the retrieval methods
 - Difficulty: 
-    - Researching what is out there to improve the retrieval method took a lot of time, we were very confused in the beginning becase 
+  - Researching what is out there to improve the retrieval method took a lot of time, we were very confused in the beginning becase 
     of lack of exprience in the field 
-    - Trying to figure out tf-idf for the embedding is very difficult. I was trying to improve by getting the tf-idf score
-    for all the tokens, and then set a threshold, and "eliminate" the words that have little significance to the documents, 
-    in hope to increase the accuracy by leaving more important words. However it did not work out. I understood theoretically
-    how to compute and tf-idf, however, since the implementation is mainly in the embedding_service that is very complicated, 
-    even after asking Jingxuan for help multiple times, I could not fix all the bugs that the system is telling me. I spent 
-    a lot of time working on this part but unfortunately it did not work out.
-    
-# RACHEL
+  - Trying to figure out `TD-IDF` for the embedding is very difficult. I was trying to improve by getting the tf-idf score for all the tokens, and then set a threshold, and "eliminate" the words that have little significance to the documents, in hope to increase the accuracy by leaving more important words. However it did not work out. I understood theoretically how to compute and `TF-IDF`, however, since the implementation is mainly in the embedding_service that is very complicated, even after asking Jingxuan for help multiple times, I could not fix all the bugs that the system is telling me. I spent a lot of time working on this part but unfortunately it did not work out.
 
+##### Rachel
 
+Besides from doing researches to gain future directions, I focused on working two improvements for our model.
 
+- Created two custom ElasticSearch analyzers:
 
+  - N-gram: this analyzer has `min_gram` of three and `max_gram` of four. The goal for using this is to test if the n-gram language model improves metrics and ranking.
 
+  - Whitespace: this analyzer breaks text into terms whenever it encounters a whitespace character. The goal for using this is to have a basic analyzer that serves as a baseline. This can allow us to compare n-gram with the baseline.
 
+- Implemented query optimizations: while it is important to work on improving the embedding models, having refined user query can also improve retrieval performance. In a simple word, we think that there are two scenarios that a query needs to be optimized: when it’s either too short or too long. For all queries, we first remove all the punctuations, remove all the stopwords, and normalize the tokens. Then, depending on the length of the query, we decide to do query expansion if there are more than eight tokens; if there are less than three words, we do text summarization.
 
+  - Query expansion: this is done through finding synonyms for each token in the query using NLTK.WordNet. WordNet nicely returns all the synonyms of a word, and I remove all with an underscore, as they will indefinitely add noise to the model. The synonyms are then appended to the original query to form a longer query.
+
+  - Text summary: I installed `spaCy` to get the name entity recognition. For example, “SpongeBob SquarePants” will be recognized as a PERSON, while “FBI” will be an ORG. This would be helpful to identify keywords in the query, since information such as name of a person or organization, geographic locations, and numbers are important to retrieve documents. 

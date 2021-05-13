@@ -114,7 +114,7 @@ https://roytuts.com/autocomplete-input-suggestion-using-python-and-flask/ -->
 
     <label for="num-results">Return the top</label>
     <input type="number" step="1" min="1" id="num-results" name="num-results"
-            {% if results_back !='' %} value="{{ results_back }}" {% endif %}>
+           value="10"{% if results_back !='' %} value="{{ results_back }}" {% endif %}>
     results
     <br>
     <input type="submit" value="Search">

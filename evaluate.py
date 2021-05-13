@@ -1,6 +1,10 @@
+"""
+same usage as evaluation.py, this file is used for evaluating the different
+queries and retrieval methods used
+adopted from Curtis's evaluate_old.py
+author: Novia
+"""
 import argparse
-from pathlib import Path
-from utils import parse_wapo_topics
 
 from elasticsearch_dsl.connections import connections
 from fp import bm25_documents, embedding_documents
@@ -52,71 +56,104 @@ def form_parser():
 
 
 def unsigned_int(x):
-    """
-    create new "type" for Python / the argparser used for this CLI -- `unsigned int`
-    :author: Curtis Wilcox
-    :param x: value to convert to `unsigned int`, if is an `int` >= 0
-    :return: integer version of `x`, iff `x` is an `int` >= 0
-    :raise: argparse.ArgumentTypeError if `x` is not an `int` or `x` is an `int` < 0
-    """
-    if not isinstance(x, int) or int(x) < 0:
+    if not isinstance(0, int) or int(x) < 0:
         raise argparse.ArgumentTypeError('Must be a number greater than or equal to zero.')
     return int(x)
 
 
+"""
+helper method used to print the r precision and the f score
+eventually decided to not use this evaluation matrix
+because r precision and f socre do not take into consideration the order of ranked documents
+new code by Novia
+"""
+def print_result_rprecision(response, top_k):
+    true_pos = 0
+    total_relevant = 135
+    for hit in response:
+        if hit.annotation:
+            if hit.annotation[-1] == '2' or hit.annotation[-1] == '1':
+                true_pos += 1
+    print("true pos", true_pos)
+    p = true_pos / top_k
+    r = true_pos / total_relevant
+    print("r-precision is ", r)
+    print("f score is", (2 * p * r) / (p + r))
+
+
+# find the relevant docs or irrelevant docs (depending on query) using ES
+# return result/response object
+# adopted by Novia from Curtis's code
+def get_search(query, analyzer, top_k, vector_name):
+    bm_search = bm25_documents(query, analyzer, top_k)  # a search object to match docs
+    if vector_name:
+        ranker = 'sbert' if vector_name == 'sbert_vector' else 'fasttext'
+        new_search = embedding_documents(query, bm_search, ranker, top_k)
+        results = new_search.execute()
+    else:  # bm25
+        results = bm_search.execute()
+    return results
+
+
+# new code by Novia
+def get_final_scores(r1, r2, topic):
+    # add all the irrelevant docs into a set
+    s = set()
+    for hit2 in r2:
+        s.add(hit2.doc_id)
+    relevance_list = []
+    # getting the ndcg for filtered docs
+    i = 1
+    for hit in r1:
+        if hit.doc_id not in s:
+            annotation: str = hit.annotation
+            if annotation:
+                if annotation[:3] == str(topic):
+                    score = int(annotation[-1])
+                    # print(i, annotation, hit.title, sep="\t")
+                    i += 1
+                else:
+                    score = 0
+            else:
+                score = 0
+            relevance_list.append(score)
+        # else:
+            # print("irrelevant: ", hit.annotation, hit.title, sep="\t")
+    # print(relevance_list)
+    print("ndcg:", ndcg(relevance_list))
+    print("ave precision:", average_precision(relevance_list))
+
+
+# adopted by Novia from Curtis's code
 def main():
-    # create default ES connection
-    connections.create_connection(hosts=["localhost"], timeout=100, alias="default")
-
-    # these are the indices of each "column" once the XML file is parsed
-    title = 0
-    description = 1
-    narration = 2
-
+    connections.create_connection(
+        hosts=["localhost"], timeout=100, alias="default")
     parser = form_parser()
     args = parser.parse_args()
-
-    topics = parse_wapo_topics(f'{Path("fp_data").joinpath("topics2018.xml")}')
-
-    idx = title if args.query_type == 'title' else narration if args.query_type == 'narration' else description
-    query = topics[args.topic_id][idx]
-
-    # set analyzer
+    """
+    modified the description and narration of the queries manually
+    """
+    query_list = ["Federal Minimum Wage Increase",
+                  "actions and reactions of President or Congress to increase U.S. federal minimum wage",
+                  "advocacy or actions (or lack thereof) by the President or Congress to increase the U.S. federal minimum wage,government contract workers."]
+    query = query_list[0] if args.query_type == 'title' else query_list[1] if args.query_type == 'description' else query_list[2]
     if args.analyzer == 'n_gram':
         analyzer = 'n_gram'
     elif args.analyzer == 'whitespace':
         analyzer = 'whitespace'
     else:
         analyzer = 'default'
-
-    # assured to be an int because types are enforced in the argparser
     top_k = int(args.top_k)
 
-    bm_search = bm25_documents(query, analyzer, top_k)
-    if args.vector_name:
-        ranker = 'sbert' if args.vector_name == 'sbert_vector' else 'fasttext'
-        new_search = embedding_documents(query, bm_search, ranker, top_k)
-        results = new_search.execute()
-    else:  # bm25
-        results = bm_search.execute()
+    # find relevant matching docs
+    rel_result = get_search(query, analyzer, top_k, args.vector_name)
 
-    def get_relevance(annotation):
-        """
-        inner function to grab just the number of relevance from the annotation
-        :param annotation: annotation from document (in the form of `topic_id-relevance` [int-int])
-        :return: relevance if relevant to current topic, otherwise 0
-        """
-        if not annotation or annotation.split('-')[0] != args.topic_id:
-            return 0
-        return int(annotation.split('-')[1])
+    # find irrelevant docs
+    irrelevant_query = "Analyses discussions pros and cons U.S. federal minimum wage increase by talking heads"
+    irrelevant_result = get_search(irrelevant_query, analyzer, top_k, args.vector_name)
 
-    # topic-relevance
-    # ex: 321-2
-    relevance = [get_relevance(hit.annotation) for hit in results]
-    for hit in [hit for hit in results if hit.annotation.split('-')[0] == args.topic_id]:
-        print(hit.annotation, hit.title, sep='\t')
-    print("NDCG: ", ndcg(relevance, top_k))
-    print("ave precision: ", average_precision(relevance))
+    # get relevance
+    get_final_scores(rel_result, irrelevant_result, args.topic_id)
 
 
 if __name__ == '__main__':

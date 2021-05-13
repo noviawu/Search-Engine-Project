@@ -27,69 +27,69 @@ spacy.prefer_gpu
 nlp = spacy.load("en_core_web_sm")
 
 keywords = ['federal', 'minimum', 'wage', 'increase', 'president',
-'congress', 'increase', 'united states', 'us', 'action', 'advocacy',
-'government', 'worker', 'contract', 'authority', 'bureau', 'labor', 'governor',
-'acts', 'law', 'bill', 'workforce', 'supreme court', 'states', 'state']
+            'congress', 'increase', 'united states', 'us', 'action', 'advocacy',
+            'government', 'worker', 'contract', 'authority', 'bureau', 'labor', 'governor',
+            'acts', 'law', 'bill', 'workforce', 'supreme court', 'states', 'state']
 
 states = ['Alabama', 'AL',
-    'Alaska', 'AK',
-    'American Samoa', 'AS',
-    'Arizona', 'AZ',
-    'Arkansas', 'AR',
-    'California', 'CA',
-    'Colorado', 'CO',
-    'Connecticut', 'CT',
-    'Delaware', 'DE',
-    'District of Columbia', 'DC',
-    'Florida', 'FL',
-    'Georgia', 'GA',
-    'Guam', 'GU',
-    'Hawaii', 'HI',
-    'Idaho', 'ID',
-    'Illinois', 'IL',
-    'Indiana', 'IN',
-    'Iowa', 'IA',
-    'Kansas', 'KS',
-    'Kentucky', 'KY',
-    'Louisiana', 'LA',
-    'Maine', 'ME',
-    'Maryland', 'MD',
-    'Massachusetts', 'MA',
-    'Michigan', 'MI',
-    'Minnesota', 'MN',
-    'Mississippi', 'MS',
-    'Missouri', 'MO',
-    'Montana', 'MT',
-    'Nebraska', 'NE',
-    'Nevada', 'NV',
-    'New Hampshire', 'NH',
-    'New Jersey', 'NJ',
-    'New Mexico', 'NM',
-    'New York', 'NY',
-    'North Carolina', 'NC',
-    'North Dakota', 'ND',
-    'Northern Mariana Islands','MP',
-    'Ohio', 'OH',
-    'Oklahoma', 'OK',
-    'Oregon', 'OR',
-    'Pennsylvania', 'PA',
-    'Puerto Rico', 'PR',
-    'Rhode Island', 'RI',
-    'South Carolina', 'SC',
-    'South Dakota', 'SD',
-    'Tennessee', 'TN',
-    'Texas', 'TX',
-    'Utah', 'UT',
-    'Vermont', 'VT',
-    'Virgin Islands', 'VI',
-    'Virginia', 'VA',
-    'Washington', 'WA',
-    'West Virginia', 'WV',
-    'Wisconsin', 'WI',
-    'Wyoming', 'WY']
+          'Alaska', 'AK',
+          'American Samoa', 'AS',
+          'Arizona', 'AZ',
+          'Arkansas', 'AR',
+          'California', 'CA',
+          'Colorado', 'CO',
+          'Connecticut', 'CT',
+          'Delaware', 'DE',
+          'District of Columbia', 'DC',
+          'Florida', 'FL',
+          'Georgia', 'GA',
+          'Guam', 'GU',
+          'Hawaii', 'HI',
+          'Idaho', 'ID',
+          'Illinois', 'IL',
+          'Indiana', 'IN',
+          'Iowa', 'IA',
+          'Kansas', 'KS',
+          'Kentucky', 'KY',
+          'Louisiana', 'LA',
+          'Maine', 'ME',
+          'Maryland', 'MD',
+          'Massachusetts', 'MA',
+          'Michigan', 'MI',
+          'Minnesota', 'MN',
+          'Mississippi', 'MS',
+          'Missouri', 'MO',
+          'Montana', 'MT',
+          'Nebraska', 'NE',
+          'Nevada', 'NV',
+          'New Hampshire', 'NH',
+          'New Jersey', 'NJ',
+          'New Mexico', 'NM',
+          'New York', 'NY',
+          'North Carolina', 'NC',
+          'North Dakota', 'ND',
+          'Northern Mariana Islands', 'MP',
+          'Ohio', 'OH',
+          'Oklahoma', 'OK',
+          'Oregon', 'OR',
+          'Pennsylvania', 'PA',
+          'Puerto Rico', 'PR',
+          'Rhode Island', 'RI',
+          'South Carolina', 'SC',
+          'South Dakota', 'SD',
+          'Tennessee', 'TN',
+          'Texas', 'TX',
+          'Utah', 'UT',
+          'Vermont', 'VT',
+          'Virgin Islands', 'VI',
+          'Virginia', 'VA',
+          'Washington', 'WA',
+          'West Virginia', 'WV',
+          'Wisconsin', 'WI',
+          'Wyoming', 'WY']
 
 states_lower = [state.lower() for state in states]
-important = keywords+states_lower
+important = keywords + states_lower
 stop_words = set(stopwords.words('english'))
 
 app = Flask(__name__)
@@ -132,6 +132,7 @@ def results():
     query_list: List[str] = query_input.split(" ")
     query_n = normalize_query(query_list)
     query = general_query_processing(query_n)
+    # query = query_input
     method = request.form['method']
     ranker = method.split('-')[0]
     analyzer = method.split('-')[1]
@@ -141,7 +142,7 @@ def results():
     # calculate the total number of results found
     num_results = sum(len(ds) for ds in documents.values())
 
-    return render_template("results.html", query=query, docs=documents[1], num_results=num_results,
+    return render_template("results.html", query=query_input, docs=documents[1], num_results=num_results,
                            page_id=1, method=method, res_per_page=RESULTS_PER_PAGE,
                            results_back=results_back,
                            last_page=(num_results == len(documents[1])))  # add variables as you wish
@@ -283,7 +284,7 @@ def form_result_list(docs):
 
     return {el['doc_id']: el for lst in paged_docs.values() for el in lst}, paged_docs
 
-  
+
 def normalize_query(query_list: List[str]) -> str:
     """
     return a normalized query with the customized text processor
@@ -291,16 +292,16 @@ def normalize_query(query_list: List[str]) -> str:
     """
     normalized_q = []
     for q in query_list:
-        normalized_q.append(text_processor.normalize(q))
-    return "".join(normalized_q)
+        normalized_q.append(text_processor.normalize(q, True))
+    return " ".join(normalized_q)
 
 
 def general_query_processing(query: str) -> str:
     """
     query optimization: if too few words --> query expansion; if too many --> text summary; if in-between --> original
-    :query: user input
+    :param query: user input
     """
-    query_no_punc = re.sub(r'[^\w\s]','',query)
+    query_no_punc = re.sub(r'[^\w\s]', '', query)
     query_lower = query_no_punc.lower()
     query_list_lower = word_tokenize(query_lower)
     filtered_sentence_l = [w for w in query_list_lower if not w in stop_words]
@@ -314,8 +315,8 @@ def general_query_processing(query: str) -> str:
         return expanded_q
     elif len(filtered_sentence_l) >= 8:
         # UNCOMMENT THE LINE BELOW IF YOU WANT TO TEST SPACY
-        #q_summary = query_summary(filtered_sentence_l, filtered_sentence_str_og)
-        q_summary = query_summary_freq(filtered_sentence_l)
+        q_summary = query_summary(filtered_sentence_l, filtered_sentence_str_og)
+        # q_summary = query_summary_freq(filtered_sentence_l)
         return q_summary
     else:
         return filtered_sentence_str_l
@@ -367,7 +368,7 @@ def query_summary_freq(query: List) -> str:
 
     net_freq = sum(freq.values())
     ele_num = len(freq.keys())
-    threshold = float(net_freq/ele_num)*1.2
+    threshold = float(net_freq / ele_num) * 1.2
 
     high_freq = []
     for token in freq:

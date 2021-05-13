@@ -141,7 +141,7 @@ https://roytuts.com/autocomplete-input-suggestion-using-python-and-flask/ -->
 
 <ol start="{{ (page_id - 1) * 8 + 1 }}">
     {% for doc in docs %} <!-- iterate over every document provided -->
-        <li><a href="/doc_data/{{ doc['doc_id'] }}">{{ doc['title'] }}</a></li>
+        <li>[{{ doc['annotation'] }}]&emsp;<a href="/doc_data/{{ doc['doc_id'] }}">{{ doc['title'] }}</a></li>
         <!-- display "header" link to full document -->
         <p>{{ doc['content'][0:150] }}...</p> <!-- display first 150 characters of content -->
 
