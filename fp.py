@@ -1,6 +1,5 @@
 import spacy
 import re
-import nltk
 import json, os
 import ssl
 from nltk.corpus import wordnet
