@@ -9,18 +9,36 @@
 
 #### Preliminary
 
-**Team member submitting code:** 
+##### Team member submitting code
 
-**Title:** Federal Minimum Wage Increase
 
-**Description:** Find descriptions of the actions and reactions of either the President or Congress to increase the U.S. federal minimum wage.
 
-**Narrative:** Relevant documents include descriptions of advocacy or actions (or lack thereof) taken by the President or Congress to increase the U.S. federal minimum wage, including increases for government contract workers. Analyses and discussions of pros and cons of an increase by talking heads is not relevant.
+##### Title
 
-**Queries:** 
+Federal Minimum Wage Increase
 
-- **Updated Description:** 
-- **Updated Narrative:** 
+##### Description
+
+Find descriptions of the actions and reactions of either the President or Congress to increase the U.S. federal minimum wage.
+
+##### Narrative
+
+Relevant documents include descriptions of advocacy or actions (or lack thereof) taken by the President or Congress to increase the U.S. federal minimum wage, including increases for government contract workers. Analyses and discussions of pros and cons of an increase by talking heads is not relevant.
+
+##### Queries
+
+- **Updated Description:** actions and reactions of President or Congress to increase U.S. federal minimum wage
+- **Updated Narrative:** advocacy or actions (or lack thereof) by the President or Congress to increase the U.S. federal minimum wage,government contract workers
+
+##### (Brief) Summary
+
+Our team did multiple things to optimize the user's retrieval of documents that are pertinent to this subject.
+
+We created two new custom analyzers -- one that used the `trigram` tokenizer and one that used the `whitespace` tokenizer (both analyzers have filters based on lowercase letters, stopwords, and asciifolding; the former uses a porter stemmer and the latter uses a snowball stemmer).
+
+We implemented a synonym mechanism.
+
+The Flask web app will automatically suggest queries for the user based on what they have typed in at any given moment. The suggestions are based off of the titles of the documents.
 
 ---
 
