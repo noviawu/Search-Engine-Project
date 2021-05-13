@@ -4,7 +4,7 @@ from utils import parse_wapo_topics
 
 from elasticsearch_dsl.connections import connections
 from fp import bm25_documents, embedding_documents
-from metrics import ndcg
+from metrics import ndcg, average_precision
 
 
 def form_parser():
@@ -115,7 +115,8 @@ def main():
     relevance = [get_relevance(hit.annotation) for hit in results]
     for hit in [hit for hit in results if hit.annotation.split('-')[0] == args.topic_id]:
         print(hit.annotation, hit.title, sep='\t')
-    print(ndcg(relevance, top_k))
+    print("NDCG: ", ndcg(relevance, top_k))
+    print("ave precision: ", average_precision(relevance))
 
 
 if __name__ == '__main__':
