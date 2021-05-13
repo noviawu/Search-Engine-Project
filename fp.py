@@ -106,7 +106,7 @@ def search():
                    for result in response.suggest.title_suggestions
                    for option in result.options]
 
-    resp = jsonify(list(suggestions))
+    resp = jsonify(suggestions)
     resp.status_code = 200
     return resp
 
