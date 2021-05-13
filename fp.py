@@ -6,10 +6,11 @@ from nltk.corpus import wordnet
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from collections import defaultdict
+from es_service.doc_template import BaseDoc
 from typing import List
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
-from elasticsearch_dsl.query import Ids, Match, MatchAll
+from elasticsearch_dsl.query import Ids, Match
 from embedding_service.client import EmbeddingClient
 from embedding_service.text_processing import TextProcessing
 from example_query import generate_script_score_query
@@ -185,14 +186,19 @@ def search():
     search "page" to give the auto-completion when typing in suggestions
     :return: jsonified list of possible autocompletion matches
     """
-    term = request.form['q']
-    print(term)
+    search_term = request.form['q']
     connections.create_connection(hosts=['localhost'], timeout=100, alias='default')
-    q = Match(title={'query': term})
-    s = Search(using='default', index='wapo_docs_50k').query(q)
-    suggest = s.suggest('autocomplete_suggestion', term, term={'field': 'content'})
-    response = suggest.execute()
-    resp = jsonify([hit.title for hit in response])
+
+    # create a search object over the document type being used
+    s = BaseDoc.search()
+    s = s.suggest('title_suggestions', search_term, completion={'field': 'title_suggest'})
+    response = s.execute()
+    # print(response.suggest.title_suggestions)
+    suggestions = [option.text
+                   for result in response.suggest.title_suggestions
+                   for option in result.options]
+
+    resp = jsonify(suggestions)
     resp.status_code = 200
     return resp
 
@@ -277,7 +283,7 @@ def form_result_list(docs):
 
     return {el['doc_id']: el for lst in paged_docs.values() for el in lst}, paged_docs
 
-
+  
 def normalize_query(query_list: List[str]) -> str:
     """
     return a normalized query with the customized text processor
@@ -369,18 +375,6 @@ def query_summary_freq(query: List) -> str:
             high_freq.append(token)
 
     return " ".join(high_freq)
-
-
-# def get_hit_key(hit):
-#     """
-#     helper function for `form_result_list` -- basically, get the relevance of the document
-#     :param hit: hit to get relevance from
-#     :return: how relevant the document is (0, 1, 2)
-#     """
-#     # if hit.annotation:
-#     #     return int(hit.annotation.split('-')[1])
-#     # return 0
-#     return int(hit.annotation.split('-')[1]) if hit.annotation else 0
 
 
 if __name__ == "__main__":

@@ -7,6 +7,12 @@ from elasticsearch.helpers import bulk
 
 from es_service.doc_template import BaseDoc
 
+from itertools import permutations
+
+from re import sub
+
+from utils import first_unique_n
+
 
 class ESIndex(object):
     def __init__(
@@ -48,13 +54,17 @@ class ESIndex(object):
             es_doc.title = doc["title"]
             es_doc.author = doc["author"]
             es_doc.content = doc["content_str"]
-            es_doc.custom_content = doc["content_str"]  # DONE: uncomment this to use custom analyzer on this field
             es_doc.n_gram_custom_content = doc["content_str"]
             es_doc.whitespace_custom_content = doc["content_str"]
             es_doc.annotation = doc["annotation"]
             es_doc.date = doc["published_date"]
             es_doc.ft_vector = doc["ft_vector"]
             es_doc.sbert_vector = doc["sbert_vector"]
+            if doc['title']:
+                title_str = ''.join(c for c in doc['title'].lower() if c.isalpha() or c.isspace())
+                title_str = sub('\s+', ' ', title_str).strip()
+                perms = permutations(first_unique_n(title_str.split(), n=6, min_length=2))
+                es_doc.title_suggest = [' '.join(p) for p in perms]
             yield es_doc
 
     def load(self, docs: Union[Iterator[Dict], Sequence[Dict]]):
