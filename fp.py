@@ -89,9 +89,7 @@ states = ['Alabama', 'AL',
 
 states_lower = [state.lower() for state in states]
 important = keywords+states_lower
-
 stop_words = set(stopwords.words('english'))
-
 
 app = Flask(__name__)
 
@@ -283,6 +281,7 @@ def form_result_list(docs):
 def normalize_query(query_list: List[str]) -> str:
     """
     return a normalized query with the customized text processor
+    :query_list: query string in a list, separated by comma
     """
     normalized_q = []
     for q in query_list:
@@ -293,6 +292,7 @@ def normalize_query(query_list: List[str]) -> str:
 def general_query_processing(query: str) -> str:
     """
     query optimization: if too few words --> query expansion; if too many --> text summary; if in-between --> original
+    :query: user input
     """
     query_no_punc = re.sub(r'[^\w\s]','',query)
     query_lower = query_no_punc.lower()
@@ -307,7 +307,8 @@ def general_query_processing(query: str) -> str:
         expanded_q = query_expansion(filtered_sentence_l)
         return expanded_q
     elif len(filtered_sentence_l) >= 8:
-        #q_summary = query_summary_naive(filtered_sentence_l, filtered_sentence_str_og)
+        # UNCOMMENT THE LINE BELOW IF YOU WANT TO TEST SPACY
+        #q_summary = query_summary(filtered_sentence_l, filtered_sentence_str_og)
         q_summary = query_summary_freq(filtered_sentence_l)
         return q_summary
     else:
@@ -329,7 +330,7 @@ def query_expansion(query: List) -> str:
     return " ".join(list_of_strings)
 
 
-def query_summary_naive(query: List, query_str: str) -> str:
+def query_summary(query: List, query_str: str) -> str:
     """
     only extract important words from the query, such as noun and verb or words in keywords or states lists
     """
