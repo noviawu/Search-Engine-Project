@@ -56,12 +56,12 @@ class EmbeddingClient(object):
 
     def send(self, data):
         """
-        Send data through provided socket.
+        Send fp_data through provided socket.
         """
         self.socket.send_string(data)
 
     def receive(self):
         """
-        Receive and return data through provided socket.
+        Receive and return fp_data through provided socket.
         """
         return self.socket.recv()

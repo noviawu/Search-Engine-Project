@@ -1,11 +1,96 @@
+import spacy
+import re
+import json, os
+import ssl
+from nltk.corpus import wordnet
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 from collections import defaultdict
 from es_service.doc_template import BaseDoc
+from typing import List
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 from elasticsearch_dsl.query import Ids, Match
 from embedding_service.client import EmbeddingClient
+from embedding_service.text_processing import TextProcessing
 from example_query import generate_script_score_query
 from flask import Flask, render_template, request, jsonify
+
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+spacy.prefer_gpu
+nlp = spacy.load("en_core_web_sm")
+
+keywords = ['federal', 'minimum', 'wage', 'increase', 'president',
+'congress', 'increase', 'united states', 'us', 'action', 'advocacy',
+'government', 'worker', 'contract', 'authority', 'bureau', 'labor', 'governor',
+'acts', 'law', 'bill', 'workforce', 'supreme court', 'states', 'state']
+
+states = ['Alabama', 'AL',
+    'Alaska', 'AK',
+    'American Samoa', 'AS',
+    'Arizona', 'AZ',
+    'Arkansas', 'AR',
+    'California', 'CA',
+    'Colorado', 'CO',
+    'Connecticut', 'CT',
+    'Delaware', 'DE',
+    'District of Columbia', 'DC',
+    'Florida', 'FL',
+    'Georgia', 'GA',
+    'Guam', 'GU',
+    'Hawaii', 'HI',
+    'Idaho', 'ID',
+    'Illinois', 'IL',
+    'Indiana', 'IN',
+    'Iowa', 'IA',
+    'Kansas', 'KS',
+    'Kentucky', 'KY',
+    'Louisiana', 'LA',
+    'Maine', 'ME',
+    'Maryland', 'MD',
+    'Massachusetts', 'MA',
+    'Michigan', 'MI',
+    'Minnesota', 'MN',
+    'Mississippi', 'MS',
+    'Missouri', 'MO',
+    'Montana', 'MT',
+    'Nebraska', 'NE',
+    'Nevada', 'NV',
+    'New Hampshire', 'NH',
+    'New Jersey', 'NJ',
+    'New Mexico', 'NM',
+    'New York', 'NY',
+    'North Carolina', 'NC',
+    'North Dakota', 'ND',
+    'Northern Mariana Islands','MP',
+    'Ohio', 'OH',
+    'Oklahoma', 'OK',
+    'Oregon', 'OR',
+    'Pennsylvania', 'PA',
+    'Puerto Rico', 'PR',
+    'Rhode Island', 'RI',
+    'South Carolina', 'SC',
+    'South Dakota', 'SD',
+    'Tennessee', 'TN',
+    'Texas', 'TX',
+    'Utah', 'UT',
+    'Vermont', 'VT',
+    'Virgin Islands', 'VI',
+    'Virginia', 'VA',
+    'Washington', 'WA',
+    'West Virginia', 'WV',
+    'Wisconsin', 'WI',
+    'Wyoming', 'WY']
+
+states_lower = [state.lower() for state in states]
+important = keywords+states_lower
+stop_words = set(stopwords.words('english'))
 
 app = Flask(__name__)
 
@@ -17,6 +102,9 @@ all_docs = []
 documents = []
 num_results = 0
 results_back = 0
+
+# text processor for query using customized processor
+text_processor = TextProcessing.from_nltk()
 
 
 # home page
@@ -39,7 +127,11 @@ def results():
     global num_results
     global results_back
 
-    query = request.form['query']
+    query_input = request.form['query']
+    # query processing
+    query_list: List[str] = query_input.split(" ")
+    query_n = normalize_query(query_list)
+    query = general_query_processing(query_n)
     method = request.form['method']
     ranker = method.split('-')[0]
     analyzer = method.split('-')[1]
@@ -122,7 +214,7 @@ def get_documents(query, analyzer, ranker, results_back):
     """
     connections.create_connection(hosts=["localhost"], timeout=100, alias="default")
     search = bm25_documents(query, analyzer, results_back)  # out here because need it for both
-    if ranker == 'bm25':  # do no more work, just process the data
+    if ranker == 'bm25':  # do no more work, just process the fp_data
         return form_result_list(search.execute())
     else:  # rerank
         new_search = embedding_documents(query, search, ranker, results_back)
@@ -190,6 +282,99 @@ def form_result_list(docs):
         )
 
     return {el['doc_id']: el for lst in paged_docs.values() for el in lst}, paged_docs
+
+  
+def normalize_query(query_list: List[str]) -> str:
+    """
+    return a normalized query with the customized text processor
+    :query_list: query string in a list, separated by comma
+    """
+    normalized_q = []
+    for q in query_list:
+        normalized_q.append(text_processor.normalize(q))
+    return "".join(normalized_q)
+
+
+def general_query_processing(query: str) -> str:
+    """
+    query optimization: if too few words --> query expansion; if too many --> text summary; if in-between --> original
+    :query: user input
+    """
+    query_no_punc = re.sub(r'[^\w\s]','',query)
+    query_lower = query_no_punc.lower()
+    query_list_lower = word_tokenize(query_lower)
+    filtered_sentence_l = [w for w in query_list_lower if not w in stop_words]
+    filtered_sentence_str_l = " ".join(filtered_sentence_l)
+    # keep the upper case as it is for spacy
+    filtered_sentence_og = [w for w in query_no_punc if not w in stop_words]
+    filtered_sentence_str_og = " ".join(filtered_sentence_og)
+
+    if len(filtered_sentence_l) <= 3:
+        expanded_q = query_expansion(filtered_sentence_l)
+        return expanded_q
+    elif len(filtered_sentence_l) >= 8:
+        # UNCOMMENT THE LINE BELOW IF YOU WANT TO TEST SPACY
+        #q_summary = query_summary(filtered_sentence_l, filtered_sentence_str_og)
+        q_summary = query_summary_freq(filtered_sentence_l)
+        return q_summary
+    else:
+        return filtered_sentence_str_l
+
+
+def query_expansion(query: List) -> str:
+    """
+    expand the query using wordnet from NLTK
+    """
+    synonyms = set()
+    for q in query:
+        syn = wordnet.synsets(q)
+        for s in syn:
+            for lm in s.lemmas():
+                if str(lm.name()).find("_") == -1:
+                    synonyms.add(str(lm.name().lower()))  # adding into synonyms
+    list_of_strings = [str(s) for s in synonyms]
+    return " ".join(list_of_strings)
+
+
+def query_summary(query: List, query_str: str) -> str:
+    """
+    only extract important words from the query, such as noun and verb or words in keywords or states lists
+    """
+    l = []
+    # get named entity recognition using pretrained pipline from spaCy
+    doc = nlp(query_str)
+    for ent in doc.ents:
+        if ent.label_ in ['PERSON', 'GPE', 'NORP', 'ORG', 'TIME', 'CARDINAL', 'MONEY', 'EVENT']:
+            l.append(str(ent.text).lower())
+    # add to the set if the query token is in the important word list, manually defined
+    for q in query:
+        if q in important and q not in l:
+            l.append(q)
+
+    return " ".join(l)
+
+
+def query_summary_freq(query: List) -> str:
+    """
+    summarize long query by their frequencies
+    """
+    freq = {}
+    for q in query:
+        if q in freq:
+            freq[q] += 1
+        else:
+            freq[q] = 1
+
+    net_freq = sum(freq.values())
+    ele_num = len(freq.keys())
+    threshold = float(net_freq/ele_num)*1.2
+
+    high_freq = []
+    for token in freq:
+        if freq[token] >= threshold:
+            high_freq.append(token)
+
+    return " ".join(high_freq)
 
 
 if __name__ == "__main__":
