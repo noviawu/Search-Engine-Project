@@ -77,10 +77,36 @@ class FastTextEmbedding:
         else:
             raise ValueError(f"cannot identify pooling method: {pooling}")
 
+    # changing for the fast text to use tf-idf
+    # commented out because there are bugs
+    # author: Novia
     def _process_tokens(self, text: str) -> List[str]:
         tokens = self.text_processor.get_valid_tokens("", text, use_stemmer=False)
+        """
+        # tokens is a list of individual tokens, it's for one single document
+        final_tokens = []
+        for token in tokens:
+            # get tf
+            pickle_tf = open("doc_tf_dict.pkl", "rb")
+            doc_tf_dict = pickle.load(pickle_tf)
+            tf = TextProcessing.tf(doc_tf_dict[i][token])  # get raw tf, but we dont know which doc is this one...
+
+            # get idf
+            pickle_df = open("df_counter.pkl", "rb")
+            df_counter = pickle.load(pickle_df)
+            idf = TextProcessing.idf(len(doc_tf_dict), df_counter[token])
+
+            # tf-idf
+            if tf*idf > 0.001 or tf*idf == 0:  # arbitrary threshold
+                final_tokens.append(token)
+        print(final_tokens)
+        return final_tokens
+        """
         return tokens
 
+    # changing the encoding for the fast text to help with tf-idf
+    # commented out because there are bugs
+    # author: Novia
     def encode(self, texts: List[str], pooling: str = "mean") -> np.array:
         """
 
@@ -88,10 +114,22 @@ class FastTextEmbedding:
         :param pooling: default "mean", pooling method to reduce token embeddings into a single document embedding
         :return:
         """
+        """
+        i = 0
+        l = []
+        for text in texts:
+            l.append(self._single_encode_text(text, i, pooling))
+            i += 1
+        doc_embeddings = np.vstack(l)
+        return doc_embeddings
+        """
+
         doc_embeddings = np.vstack(
             [self._single_encode_text(text, pooling) for text in texts]
         )
         return doc_embeddings
+
+
 
 
 class Encoder:
