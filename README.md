@@ -28,13 +28,13 @@ Relevant documents include descriptions of advocacy or actions (or lack thereof)
 ##### Queries
 
 - **Updated Description:** actions and reactions of President or Congress to increase U.S. federal minimum wage
-- **Updated Narrative:** advocacy or actions (or lack thereof) by the President or Congress to increase the U.S. federal minimum wage,government contract workers
+- **Updated Narrative:** advocacy or actions (or lack thereof) by the President or Congress to increase the U.S. federal minimum wage, government contract workers
 
 ##### (Brief) Summary
 
 Our team did multiple things to optimize the user's retrieval of documents that are pertinent to this subject.
 
-We created two new custom analyzers -- one that used the `trigram` tokenizer and one that used the `whitespace` tokenizer (both analyzers have filters based on lowercase letters, stopwords, and asciifolding; the former uses a porter stemmer and the latter uses a snowball stemmer).
+We created two new custom analyzers -- one that used the `trigram` tokenizer and one that used the `whitespace` tokenizer (both analyzers have filters based on lowercase letters, stopwords, asciifolding, and use the porter stemmer).
 
 We implemented a synonym mechanism.
 
