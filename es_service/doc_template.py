@@ -12,14 +12,14 @@ from elasticsearch_dsl import (  # type: ignore
 # DONE: build your own analyzer
 n_gram = analyzer(
     'n_gram',
-    tokenizer=tokenizer('trigram', 'ngram', min_gram=3, max_gram=5),
-    filter=['lowercase', 'stop', 'asciifolding', 'porter_stem'],
+    tokenizer=tokenizer('trigram', 'ngram', min_gram=3, max_gram=4),
+    filter=['lowercase', 'stop', 'asciifolding', 'snowball', 'porter_stem'],
 )
 
 whitespace = analyzer(
     'whitespace',
     tokenizer='whitespace',
-    filter=['lowercase', 'stop', 'asciifolding', 'snowball'],
+    filter=['lowercase', 'stop', 'asciifolding', 'snowball', 'porter_stem'],
 )
 
 
