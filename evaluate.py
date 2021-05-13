@@ -56,18 +56,27 @@ def form_parser():
 
 
 def unsigned_int(x):
-    if not isinstance(0, int) or int(x) < 0:
+    """
+    new "type": unsigned int
+    :author: Curtis
+    :param x: variable to cast to unsigned int
+    :return: int form if x is a non-zero int
+    :raise argparse.ArgumentTypeError: if x is not a non-zero int
+    """
+    if not isinstance(x, int) or int(x) < 0:
         raise argparse.ArgumentTypeError('Must be a number greater than or equal to zero.')
     return int(x)
 
 
-"""
-helper method used to print the r precision and the f score
-eventually decided to not use this evaluation matrix
-because r precision and f socre do not take into consideration the order of ranked documents
-new code by Novia
-"""
 def print_result_rprecision(response, top_k):
+    """
+    helper method used to print the r precision and the f score
+    eventually decided to not use this evaluation matrix
+    because r precision and f socre do not take into consideration the order of ranked documents
+    :author: Novia
+    :param response: ElasticSearch from `search.execute()`
+    :param top_k: number of documents to retrieve
+    """
     true_pos = 0
     total_relevant = 135
     for hit in response:
@@ -81,10 +90,16 @@ def print_result_rprecision(response, top_k):
     print("f score is", (2 * p * r) / (p + r))
 
 
-# find the relevant docs or irrelevant docs (depending on query) using ES
-# return result/response object
-# adopted by Novia from Curtis's code
 def get_search(query, analyzer, top_k, vector_name):
+    """
+    find the relevant docs or irrelevant docs (depending on query) using ES
+    :author: Novia
+    :param query: query to query on
+    :param analyzer: which analyzer to use
+    :param top_k: number of documents to retrieve
+    :param vector_name: which vector to use for reranking
+    :return: results of the search
+    """
     bm_search = bm25_documents(query, analyzer, top_k)  # a search object to match docs
     if vector_name:
         ranker = 'sbert' if vector_name == 'sbert_vector' else 'fasttext'
@@ -95,8 +110,14 @@ def get_search(query, analyzer, top_k, vector_name):
     return results
 
 
-# new code by Novia
 def get_final_scores(r1, r2, topic):
+    """
+    uses set difference on r1 and r2 and then calculates NDCG and average precision using what is left
+    :author: Novia
+    :param r1: search result with relevant documents
+    :param r2: search results with irrelevant documents
+    :param topic: the topic number (for our case, 816)
+    """
     # add all the irrelevant docs into a set
     s = set()
     for hit2 in r2:
@@ -118,7 +139,7 @@ def get_final_scores(r1, r2, topic):
                 score = 0
             relevance_list.append(score)
         # else:
-            # print("irrelevant: ", hit.annotation, hit.title, sep="\t")
+        # print("irrelevant: ", hit.annotation, hit.title, sep="\t")
     # print(relevance_list)
     print("ndcg:", ndcg(relevance_list))
     print("ave precision:", average_precision(relevance_list))
@@ -130,13 +151,13 @@ def main():
         hosts=["localhost"], timeout=100, alias="default")
     parser = form_parser()
     args = parser.parse_args()
-    """
-    modified the description and narration of the queries manually
-    """
+
+    # modified the description and narration of the queries manually
     query_list = ["Federal Minimum Wage Increase",
                   "actions and reactions of President or Congress to increase U.S. federal minimum wage",
                   "advocacy or actions (or lack thereof) by the President or Congress to increase the U.S. federal minimum wage,government contract workers."]
     query = query_list[0] if args.query_type == 'title' else query_list[1] if args.query_type == 'description' else query_list[2]
+
     if args.analyzer == 'n_gram':
         analyzer = 'n_gram'
     elif args.analyzer == 'whitespace':

@@ -23,7 +23,7 @@ if __name__ == '__main__':
     doc_tf_dict = {}
 
     # change pa5_data -> fp_data
-    wapo_file = "pa5_data/subset_wapo_50k_sbert_ft_filtered.jl"
+    wapo_file = "fp_data/subset_wapo_50k_sbert_ft_filtered.jl"
     for i, doc in tqdm(enumerate(load_clean_wapo_with_embedding(wapo_file))):
         # print(i) # count of docs from 0 to xxxxx
         # print(doc) # the dictionary object of one doc, like {'title':'xxx', 'content_str':'ddd'...}

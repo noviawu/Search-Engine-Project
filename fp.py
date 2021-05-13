@@ -1,6 +1,5 @@
 import spacy
 import re
-import json, os
 import ssl
 from nltk.corpus import wordnet
 from nltk.corpus import stopwords
@@ -23,14 +22,18 @@ except AttributeError:
 else:
     ssl._create_default_https_context = _create_unverified_https_context
 
+# magic
 spacy.prefer_gpu
 nlp = spacy.load("en_core_web_sm")
 
+# list of words that are important to topic for use in query expansion / summarization
+# naïve way of doing so, but oh well
 keywords = ['federal', 'minimum', 'wage', 'increase', 'president',
             'congress', 'increase', 'united states', 'us', 'action', 'advocacy',
             'government', 'worker', 'contract', 'authority', 'bureau', 'labor', 'governor',
             'acts', 'law', 'bill', 'workforce', 'supreme court', 'states', 'state']
 
+# mapping from state/territory name to abbreviation for use in query expansion / summarization
 states = ['Alabama', 'AL',
           'Alaska', 'AK',
           'American Samoa', 'AS',
@@ -285,10 +288,11 @@ def form_result_list(docs):
     return {el['doc_id']: el for lst in paged_docs.values() for el in lst}, paged_docs
 
 
-def normalize_query(query_list: List[str]) -> str:
+def normalize_query(query_list):
     """
     return a normalized query with the customized text processor
-    :query_list: query string in a list, separated by comma
+    :param query_list: query string in a list, separated by comma
+    :return: normalized query
     """
     normalized_q = []
     for q in query_list:
@@ -296,35 +300,38 @@ def normalize_query(query_list: List[str]) -> str:
     return " ".join(normalized_q)
 
 
-def general_query_processing(query: str) -> str:
+def general_query_processing(query):
     """
     query optimization: if too few words --> query expansion; if too many --> text summary; if in-between --> original
     :param query: user input
+    :return: processed query
     """
     query_no_punc = re.sub(r'[^\w\s]', '', query)
     query_lower = query_no_punc.lower()
     query_list_lower = word_tokenize(query_lower)
-    filtered_sentence_l = [w for w in query_list_lower if not w in stop_words]
+    filtered_sentence_l = [w for w in query_list_lower if w not in stop_words]
     filtered_sentence_str_l = " ".join(filtered_sentence_l)
     # keep the upper case as it is for spacy
-    filtered_sentence_og = [w for w in query_no_punc if not w in stop_words]
+    filtered_sentence_og = [w for w in query_no_punc if w not in stop_words]
     filtered_sentence_str_og = " ".join(filtered_sentence_og)
 
     if len(filtered_sentence_l) <= 3:
         expanded_q = query_expansion(filtered_sentence_l)
         return expanded_q
     elif len(filtered_sentence_l) >= 8:
-        # UNCOMMENT THE LINE BELOW IF YOU WANT TO TEST SPACY
         q_summary = query_summary(filtered_sentence_l, filtered_sentence_str_og)
+        # UNCOMMENT THE LINE BELOW IF YOU WANT TO TEST TERM FREQUENCY
         # q_summary = query_summary_freq(filtered_sentence_l)
         return q_summary
     else:
         return filtered_sentence_str_l
 
 
-def query_expansion(query: List) -> str:
+def query_expansion(query):
     """
     expand the query using wordnet from NLTK
+    :param query: query to expand
+    :return: expanded query
     """
     synonyms = set()
     for q in query:
@@ -337,9 +344,12 @@ def query_expansion(query: List) -> str:
     return " ".join(list_of_strings)
 
 
-def query_summary(query: List, query_str: str) -> str:
+def query_summary(query, query_str):
     """
     only extract important words from the query, such as noun and verb or words in keywords or states lists
+    :param query: query to summarize (as list from the original query, split on spaces)
+    :param query_str: query to summarize in string form
+    :return: summarized query
     """
     l = []
     # get named entity recognition using pretrained pipline from spaCy
@@ -355,9 +365,12 @@ def query_summary(query: List, query_str: str) -> str:
     return " ".join(l)
 
 
-def query_summary_freq(query: List) -> str:
+def query_summary_freq(query, scalar=1.2):
     """
     summarize long query by their frequencies
+    :param query: query in list form to get more frequent terms from
+    :param scalar: used to determine the threshold relative to the average frequency (scalar is a float)
+    :return: more frequent words in query (string, elements obtained from words in query that have a frequency above the set threshold)
     """
     freq = {}
     for q in query:
@@ -368,7 +381,7 @@ def query_summary_freq(query: List) -> str:
 
     net_freq = sum(freq.values())
     ele_num = len(freq.keys())
-    threshold = float(net_freq / ele_num) * 1.2
+    threshold = float(net_freq / ele_num) * scalar
 
     high_freq = []
     for token in freq:
