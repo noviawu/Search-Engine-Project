@@ -21,7 +21,7 @@ analyzers=('default' 'n_gram' 'whitespace')
 for analyzer in $analyzers; do
   for type in $types; do
     echo "$type" "$analyzer"
-    python3 eval_with_custom_query.py --index_name wapo_docs_50k --topic_id 816 --query_type "$type" --top_k 20 --analyzer "$analyzer" --vector_name sbert_vector
+    python3 evaluate.py --index_name wapo_docs_50k --topic_id 816 --query_type "$type" --top_k 20 --analyzer "$analyzer"
     echo ""
   done
 done

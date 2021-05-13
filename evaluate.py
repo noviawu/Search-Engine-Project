@@ -63,7 +63,7 @@ def unsigned_int(x):
     :return: int form if x is a non-zero int
     :raise argparse.ArgumentTypeError: if x is not a non-zero int
     """
-    if not isinstance(x, int) or int(x) < 0:
+    if int(x) < 0:
         raise argparse.ArgumentTypeError('Must be a number greater than or equal to zero.')
     return int(x)
 
@@ -131,16 +131,16 @@ def get_final_scores(r1, r2, topic):
             if annotation:
                 if annotation[:3] == str(topic):
                     score = int(annotation[-1])
-                    # print(i, annotation, hit.title, sep="\t")
+                    print(i, annotation, hit.title, sep="\t")
                     i += 1
                 else:
                     score = 0
             else:
                 score = 0
             relevance_list.append(score)
-        # else:
-        # print("irrelevant: ", hit.annotation, hit.title, sep="\t")
-    # print(relevance_list)
+        else:
+            print("irrelevant: ", hit.annotation, hit.title, sep="\t")
+    print(relevance_list)
     print("ndcg:", ndcg(relevance_list))
     print("ave precision:", average_precision(relevance_list))
 

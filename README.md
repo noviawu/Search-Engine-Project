@@ -11,7 +11,7 @@
 
 ##### Team member submitting code
 
-
+Curtis Wilcox
 
 ##### Title
 
@@ -36,13 +36,25 @@ Our team did multiple things to optimize the user's retrieval of documents that 
 
 We created two new custom analyzers -- one that used the `trigram` tokenizer and one that used the `whitespace` tokenizer (both analyzers have filters based on lowercase letters, stopwords, asciifolding, and use the porter stemmer).
 
-We implemented a synonym mechanism to invoke either query expansion (if the query has fewer than four words) or query summarization (if the query has greater than seven words).
+We implemented a synonym mechanism to invoke query expansion (if the query has fewer than four words). We also implemented query summarization using `spaCy` (if the query has greater than seven words).
 
 We removed boilerplate text from queries and utilized the set difference between the results of documents from a relevant query and the results from an irrelevant query (for example, anything about talking heads) to remove irrelevant documents from the overall result set.
 
 We attempted to use the `TF-IDF` scoring mechanism to reduce the number of irrelevant tokens in the embeddings in hopes of improving the retrieval performance (especially for `fastText`). Unfortunately, this proved too complicated for us.
 
 The Flask web app will automatically suggest queries for the user based on what they have typed in at any given moment. The suggestions are based off of the titles of the documents.
+
+##### Files to Look At
+
+- `fp.py`
+- `evaluate.py`
+- `es_service/doc_template.py` and `es_service/index.py` (only to change building the index -- adding new fields)
+- `tfidf.py`
+- the `HTML` files (if you feel so inclined)
+
+##### Note
+
+All of our files are based off of `fp_data/` (similar to how the homework assignments were `paX_data/`, where `X` is the assignment number).
 
 ---
 
@@ -146,11 +158,11 @@ The system that we created for this final project runs primarily off of two file
 
 `evaluate.py` contains the logic for a command-line interface that will display the `NDCG@{top_k}` score for a query. The data can be queried by using the title, description, or narration of a specified wapo topic. The script must also be supplied the number of documents to return and whether the default analyzer or the custom analyzer will be used, as well as whether or not the results should be reranked (using the `sBERT` embeddings or the `fastText` embeddings if so). More information is provided in `Description/CLI` and `Run Instructions/CLI`.
 
-`example_analyzer.py`, `example_embedding.py`, and `example_query.py` each provide examples of the analyzers/embeddings/queries that can be used.
-
 `load_es_index.py` reads in the wapo data and constructs the index for accessing its information.
 
 `metrics.py` contains logic for calculuating the `NDCG` score and the `Average Precision` of a query.
+
+`tfidf.py` gets the information for calculating the `TF-IDF` scores by getting raw term and document frequencies, and then pickles them. As noted elsewhere, the work in this file unfortunately did not come to fruition.
 
 `home.html` is the "index" file for the site. It presents a search bar to the user and allows them to enter a query to find relevant documents, by way of selecting the search method (reranking, which analyzer to use, number of results to retrieve).
 
@@ -160,53 +172,53 @@ The system that we created for this final project runs primarily off of two file
 
 ---
 
-#### Results
+#### Output
 
-##### Baseline Results
+##### Baseline Results (with only the default analyzer)
 
-| NDCG           | Title | Description | Narration |
-| -------------- | ----- | ----------- | --------- |
-| BM25 + def     | 0.767 | 0.836       | 0.708     |
-| sBERT + def    | 0.783 | 0.832       | 0.858     |
-| fastText + def | 0.579 | 0.628       | 0.676     |
+| NDCG                        | Title | Description | Narration |
+| --------------------------- | ----- | ----------- | --------- |
+| BM25 / Default Analyzer     | 0.767 | 0.836       | 0.708     |
+| sBERT / Default Analyzer    | 0.783 | 0.832       | 0.858     |
+| fastText / Default Analyzer | 0.579 | 0.628       | 0.676     |
 
-| Ave Precision  | Title | Description | Narration |
-| -------------- | ----- | ----------- | --------- |
-| BM25 + def     | 0.476 | 0.803       | 0.570     |
-| sBERT + def    | 0.709 | 0.717       | 0.832     |
-| fastText + def | 0.331 | 0.502       | 0.457     |
+| Average Precision           | Title | Description | Narration |
+| --------------------------- | ----- | ----------- | --------- |
+| BM25 / Default Analyzer     | 0.476 | 0.803       | 0.570     |
+| sBERT / Default Analyzer    | 0.709 | 0.717       | 0.832     |
+| fastText / Default Analyzer | 0.331 | 0.502       | 0.457     |
 
-##### After Results
+##### After Results (with the default analyzer and the two new custom analyzers)
 
-| NDCG                  | Title | Description | Narration |
-| --------------------- | ----- | ----------- | --------- |
-| BM25 + def            | 0.836 | 0.879       | 0.757     |
-| BM25 + n_gram         | 0.385 | 0.731       | 0.634     |
-| BM25 + whitespace     | 0.596 | 0.768       | 0.680     |
-| sBERT + def           | 0.857 | 0.896       | 0.822     |
-| sBERT + n_gram        | 0.860 | 0.843       | 0.700     |
-| sBERT + whitespace    | 0.842 | 0.839       | 0.716     |
-| fastText + def        | 0.606 | 0.783       | 0.817     |
-| fastText + n_gram     | 0.332 | 0.870       | 0.895     |
-| fastText + whitespace | 0.430 | 0.958       | 0.865     |
+| NDCG                           | Title | Description | Narration |
+| ------------------------------ | ----- | ----------- | --------- |
+| BM25 / Default Analyzer        | 0.836 | 0.879       | 0.757     |
+| BM25 / n_gram Analyzer         | 0.385 | 0.731       | 0.634     |
+| BM25 / Whitespace Analyzer     | 0.597 | 0.768       | 0.680     |
+| sBERT / Default Analyzer       | 0.857 | 0.896       | 0.822     |
+| sBERT / n_gram Analyzer        | 0.859 | 0.844       | 0.700     |
+| sBERT / Whitespace Analyzer    | 0.842 | 0.839       | 0.716     |
+| fastText / Default Analyzer    | 0.605 | 0.783       | 0.817     |
+| fastText / n_gram Analyzer     | 0.332 | 0.870       | 0.895     |
+| fastText / Whitespace Analyzer | 0.430 | 0.958       | 0.865     |
 
 
-| Ave Precision         | Title | Description | Narration |
-| --------------------- | ----- | ----------- | --------- |
-| BM25 + def            | 0.527 | 0.921       | 0.613     |
-| BM25 + n_gram         | 0.238 | 0.638       | 0.526     |
-| BM25 + whitespace     | 0.433 | 0.731       | 0.649     |
-| sBERT + def           | 0.787 | 0.944       | 0.715     |
-| sBERT + n_gram        | 0.978 | 0.864       | 0.656     |
-| sBERT + whitespace    | 0.877 | 0.832       | 0.742     |
-| fastText + def        | 0.344 | 0.724       | 0.698     |
-| fastText + n_gram     | 0.153 | 0.640       | 0.685     |
-| fastText + whitespace | 0.266 | 0.840       | 0.724     |
+| Average Precision              | Title | Description | Narration |
+| ------------------------------ | ----- | ----------- | --------- |
+| BM25 / Default Analyzer        | 0.527 | 0.921       | 0.613     |
+| BM25 / n_gram Analyzer         | 0.238 | 0.638       | 0.526     |
+| BM25 / Whitespace Analyzer     | 0.437 | 0.731       | 0.649     |
+| sBERT / Default Analyzer       | 0.787 | 0.944       | 0.715     |
+| sBERT / n_gram Analyzer        | 1.0   | 0.864       | 0.656     |
+| sBERT / Whitespace Analyzer    | 0.877 | 0.832       | 0.742     |
+| fastText / Default Analyzer    | 0.344 | 0.724       | 0.698     |
+| fastText / n_gram Analyzer     | 0.153 | 0.640       | 0.686     |
+| fastText / Whitespace Analyzer | 0.266 | 0.840       | 0.724     |
 
 
 ***
 
-#### Breakdown by Teammate
+#### Breakdown by Teammate (Including Teammate-Specific Results)
 
 ##### Curtis
 
@@ -220,35 +232,54 @@ The Flask-side display of success comes in the form of the `search` function in 
 
 Ideally, the suggestions would not be based solely on the first six unique two-or-more-character words in the title of the document, and have more to do with parts of the content of the document being suggested. However, since generating permutations is expensive, and it took so long to paw through layers of difficult documentation, StackOverflow questions, and GitHub Issues, and get all of the parts to work together, this is the method that was selected.
 
-I spent about fifteen hours into this assignment. 
+**Time Spent** I spent about fifteen hours into this assignment.
+
+**Difficulty** The difficult part of this assignment was twofold. First, the expectations were not clear and we didn't have very much to go off of, which made starting and gaining any sort of momentum quite tricky. Second, the documentation of ElasticSearch, while seemingly extensive, had examples that were useless to us because we are using the `elasticsearch_dsl` Python wrapper, which in my opinion does not have useful documentation.
+
+**General Comments** I think this final project assignment could use some serious refinement. I understand that it hasn't been given before, and I don't think that giving it during a remote (pandemic) semester was the best call.
 
 ##### Novia
 
-- Tasks: 
-  - Removal of boilerplate texts in queries 
-  - Perform set difference of relevant query search and irrelevant query search to eliminate irrelevant documents
-  - Ran most of the scores, before improvement and after each feature improvement
-  - Computing `TF-IDF` scores for each token to try to filter out less important words, so only important words are embedded
+##### Tasks
 
+- Removal of boilerplate texts in queries.
+- Perform set difference of relevant query search and irrelevant query search to eliminate irrelevant documents.
+- Ran most of the scores, before improvement and after each feature improvement.
+- Computing `TF-IDF` scores for each token to try to filter out less important words, so only important words are embedded.
+- Logic and code implementation: 
+  - Simple removal of the boilerplate texts in the given TREC queries. I thought about doing automation on that but Jingxuan mentioned it’s just for this specific topic so I implemented a list of custom queries in the `evaluate.py`. The performance of ElasticSearch improved a lot once you removed them, implying that query formulation and processing is essential to retrieval. 
+  - In the `evaluate.py`, I implemented a set difference algorithm in hope to reduce the number of irrelevant documents returned. The basic logic is that we use our original query to search like usual with all improvements, then we search for the irrelevant query. Then for the documents that got retrieved in the relevant document list, if it also showed up on the irrelevant list, then it might be irrelevant and I do not display those irrelevant documents, they are also not counted in the calculation of the `NDCG` score.
+  - Running scores on different stages of improvement that we implemented, nothing fancy here.
+  - Attempted to compute the `TF-IDF` score to improve the fastText embedding. I wanted to compute all the term frequency and document frequency, and then be able to compute the `TF-IDF` scores for each token. Then based on the average of the `TF-IDF` score, I would come up with a threshold, and any words below the threshold `TF-IDF` score will not have embedding. This way hopefully the fastText embedding will be more informative. The code is changed on the `text_processing.py` and embed.py, also added a file called `TF-IDF` that goes through the corpus to get the necessary information for the calculation of the `TF-IDF`. The code change in the files except for `tfidf.py` is commented out because of system errors. Unfortunately I encountered many difficulties trying to implement the whole advancement of the embedding service.
 
-- Time spent: around 10 hours researching, asking questions, implementing, scoring the retrieval methods
-- Difficulty: 
-  - Researching what is out there to improve the retrieval method took a lot of time, we were very confused in the beginning becase 
-    of lack of exprience in the field 
-  - Trying to figure out `TD-IDF` for the embedding is very difficult. I was trying to improve by getting the tf-idf score for all the tokens, and then set a threshold, and "eliminate" the words that have little significance to the documents, in hope to increase the accuracy by leaving more important words. However it did not work out. I understood theoretically how to compute and `TF-IDF`, however, since the implementation is mainly in the embedding_service that is very complicated, even after asking Jingxuan for help multiple times, I could not fix all the bugs that the system is telling me. I spent a lot of time working on this part but unfortunately it did not work out.
+##### Time Spent
+
+I spent around 13 hours researching, asking questions, implementing, scoring the retrieval methods.
+
+##### Difficulty
+
+- Researching what is out there to improve the retrieval method took a lot of time, we were very confused in the beginning because of lack of experience in the field.
+- Trying to figure out `TF-IDF` for the embedding is very difficult. I was trying to improve by getting the `TF-IDF` score for all the tokens, and then set a threshold, and "eliminate" the words that have little significance to the documents, in hope to increase the accuracy by leaving more important words. However it did not work out. I understood theoretically how to compute and `TF-IDF`, however, since the implementation is mainly in the `embedding_service` that is very complicated, even after asking Jingxuan for help multiple times, I could not fix all the bugs that the system is telling me. I spent a lot of time working on this part but unfortunately it did not work out.
 
 ##### Rachel
 
-Besides from doing researches to gain future directions, I focused on working two improvements for our model.
+Besides doing researches to gain future directions, I focused on working on two improvements for our model.
 
 - Created two custom ElasticSearch analyzers:
 
-  - N-gram: this analyzer has `min_gram` of three and `max_gram` of four. The goal for using this is to test if the n-gram language model improves metrics and ranking.
+  - N-gram: this analyzer has `min_gram` of 3 and `max_gram` of 4. The goal for using this is to test if the `n-gram` language model improves metrics and ranking.
 
   - Whitespace: this analyzer breaks text into terms whenever it encounters a whitespace character. The goal for using this is to have a basic analyzer that serves as a baseline. This can allow us to compare n-gram with the baseline.
+- Implemented query optimizations: while it is important to work on improving the embedding models, having refined user queries can also improve retrieval performance. In simple words, we think that there are two scenarios that a query that needs to be optimized: when it is either too short or too long. We first remove all the punctuations, all the stopwords, and normalize the tokens for all queries. Then, depending on the length of the query, we decide to do query expansion if there are more than eight tokens; if there are less than three words, we do text summarization.
 
-- Implemented query optimizations: while it is important to work on improving the embedding models, having refined user query can also improve retrieval performance. In a simple word, we think that there are two scenarios that a query needs to be optimized: when it’s either too short or too long. For all queries, we first remove all the punctuations, remove all the stopwords, and normalize the tokens. Then, depending on the length of the query, we decide to do query expansion if there are more than eight tokens; if there are less than three words, we do text summarization.
+  - Query expansion: this is done by finding synonyms for each token in the query using NLTK.WordNet. WordNet nicely returns all the synonyms of a word, and I remove all with an underscore, as they will indefinitely add noise to the model. The synonyms are then appended to the original query to form a longer query. We acknowledge that this may add noise to the model, but we did see that query expansion reranks more relevant documents more to the top.
+  - Text summary: This is done through `spaCy`, a python package for advanced natural language processing. I used `spaCy` to get the name entity recognition. For example, “SpongeBob SquarePants” will be recognized as a PERSON, while “FBI” will be an ORG. This would be helpful to identify keywords in long queries, since information such as the name of a person or organization, geographic locations, and numbers are crucially important, as they will reduce the noise level, which is high for long queries. I defined keywords to be tokens that have either 'PERSON', 'GPE', 'NORP', 'ORG', 'TIME', 'CARDINAL', 'MONEY', 'EVENT' as their name entity recognition. In addition, I manually initiated two lists to ensure important words are not excluded from the process. The first contains all the keywords from topic 816’s title, description, and narrative (mostly nouns and distinguishable verbs). The second is a list of state names, with abbreviations, as geographic locations are distinguishable information, and the minimum wage is different from state to state. As a result, the query expansion reranks more relevant documents more to the top and brought up significantly more relevant documents.
+  - Also, I implemented a naive system to filter out the less significant words by setting a term frequency threshold. First, the frequencies for all tokens in the query are calculated and stored in a dictionary. Then, the threshold is calculated by multiplying the average frequency by a constant scalar. We used `1.2` in the code, but the higher the threshold, the fewer the words are left. However, this is a naive approach because one, the most frequent word in a query may not be informative (i.e. person), second, query token frequency needs to be calculated using the token document (i.e. include query token that appears more frequently in the documents).
 
-  - Query expansion: this is done through finding synonyms for each token in the query using NLTK.WordNet. WordNet nicely returns all the synonyms of a word, and I remove all with an underscore, as they will indefinitely add noise to the model. The synonyms are then appended to the original query to form a longer query.
+##### Time
 
-  - Text summary: I installed `spaCy` to get the name entity recognition. For example, “SpongeBob SquarePants” will be recognized as a PERSON, while “FBI” will be an ORG. This would be helpful to identify keywords in the query, since information such as name of a person or organization, geographic locations, and numbers are important to retrieve documents. 
+I spent around 13-15 hrs on this project. Researching and debugging took a lot of time.
+
+##### Difficulty
+
+I learned a lot from this project, but I think it’s challenging in the way that I didn’t know what to research from the beginning, and I was stuck to find a place to begin. 
