@@ -1,4 +1,4 @@
-# Final Project: Federal Minimum Wage Increase (TREC #816)
+# Final Project: Search Engine on the Topic of Federal Minimum Wage Increase (TREC #816)
 ### Curtis Wilcox, Novia Wu, and Rachel Peng
 
 ### Thursday, May 13, 2021
